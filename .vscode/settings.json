@@ -1,0 +1,6 @@
+{
+    "pester.runTestsInNewProcess": true,
+    "powershell.enableProfileLoading": false,
+    "powershell.pester.useLegacyCodeLens": false,
+    "powershell.pester.codeLens": true
+}
