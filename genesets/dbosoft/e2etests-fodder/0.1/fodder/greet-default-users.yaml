@@ -1,0 +1,17 @@
+name: greet-default-users
+fodder:
+  - name: add-greeting-to-alice
+    type: shellscript
+    content: |
+      #!/bin/bash
+      echo 'Hello Alice!' >> hello-world.txt
+  - name: add-greeting-to-bob
+    type: shellscript
+    content: |
+      #!/bin/bash
+      echo 'Hello Bob!' >> hello-world.txt
+  - name: add-greeting-to-eve
+    type: shellscript
+    content: |
+      #!/bin/bash
+      echo 'Hello Eve!' >> hello-world.txt
