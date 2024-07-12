@@ -15,7 +15,7 @@ if ($EryphSettings.EryphPackerPath) {
 }
 
 if ($EryphSettings.ComputeClientPath) {
-    if(-not (Get-module -Name "Eryph.ComputeClient.Commands")) {
+    if (-not (Get-module -Name "Eryph.ComputeClient.Commands")) {
         Remove-Module Eryph.ComputeClient -Force -ErrorAction SilentlyContinue
         Import-Module (Join-Path $EryphSettings.ComputeClientPath "Eryph.ComputeClient.Commands.dll")
     }

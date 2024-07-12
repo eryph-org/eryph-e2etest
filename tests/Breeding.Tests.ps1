@@ -61,6 +61,51 @@ fodder:
             $vmIdResponse = Invoke-SSHCommand -Command "cat /hyperv-vm-id.txt" -SSHSession $sshSession
             $vmIdResponse.Output | Should -Be $vm.Id
         }
+
+        It "Creates catlet with parameterized fodder in parent" {
+            $config = @'
+parent: dbosoft/e2etests-os/greet-mars-0.2
+
+variables:
+- name: userName
+  value: Eve E2E
+
+fodder:
+- source: gene:dbosoft/e2etests-fodder/0.2:greet-user
+  variables:
+  - name: userName
+    value: Andy Astronaut
+- source: gene:dbosoft/e2etests-fodder/0.2:greet-default-users
+  remove: true
+'@
+                    
+            New-Catlet -Name $catletName -ProjectName $projectName -Config $config -SkipVariablesPrompt
+            $sshSession = Connect-Catlet -CatletName $catletName
+            $helloWorldResponse = Invoke-SSHCommand -Command "cat /hello-world.txt" -SSHSession $sshSession
+            $helloWorldResponse.Output | Should -Be @(
+                "Hello inhabitents of planet Mars!"
+                "Hello Andy Astronaut!"
+            )
+        }
+
+        It "Fails when parent and child use different tags of the same gene set" {
+            $config = @'
+parent: dbosoft/e2etests-os/greet-mars-0.2
+
+variables:
+- name: userName
+  value: Eve E2E
+
+fodder:
+- source: gene:dbosoft/e2etests-fodder/0.1:greet-user
+  variables:
+  - name: userName
+    value: Andy Astronaut
+'@
+                    
+            { New-Catlet -Name $catletName -ProjectName $projectName -Config $config -SkipVariablesPrompt } `
+            | Should -Throw "*The gene set 'dbosoft/e2etests-fodder' is used with different tags ('0.2', '0.1')*"
+        }
     }
 
     AfterEach {

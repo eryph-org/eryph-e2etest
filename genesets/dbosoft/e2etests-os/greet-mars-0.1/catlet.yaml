@@ -1,0 +1,13 @@
+name: greet-mars
+parent: dbosoft/e2etests-os/base
+
+fodder:
+- source: gene:dbosoft/e2etests-fodder/0.1:greet-planet
+  variables:
+  - name: planetName
+    value: Mars
+- source: gene:dbosoft/e2etests-fodder/0.1:greet-user
+  variables:
+  - name: userName
+    value: Marty Marsian
+- source: gene:dbosoft/e2etests-fodder/0.1:greet-default-users

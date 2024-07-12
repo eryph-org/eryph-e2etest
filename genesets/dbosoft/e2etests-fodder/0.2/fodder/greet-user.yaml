@@ -1,0 +1,11 @@
+name: greet-user
+variables:
+  - name: userName
+    type: String
+    required: true
+fodder:
+  - name: add-user-greeting
+    type: shellscript
+    content: |
+      #!/bin/bash
+      echo 'Hello {{ userName }}!' >> hello-world.txt
