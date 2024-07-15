@@ -1,5 +1,6 @@
 {
     "recommendations": [
-        "pspester.pester-test"
+        "pspester.pester-test",
+        "editorconfig.editorconfig"
     ]
 }
