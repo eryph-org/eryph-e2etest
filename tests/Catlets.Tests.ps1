@@ -20,7 +20,7 @@ cpu:
   count: 3
 memory:
   startup: 1024
-  minimum: 512
+  minimum: 256
   maximum: 2048
 drives:
 - name: sda
@@ -38,9 +38,10 @@ network_adapters:
 
       $vm.ProcessorCount | Should -BeExactly 3
 
+      $vm.DynamicMemoryEnabled | Should -BeTrue
       $vm.MemoryStartup | Should -BeExactly (1024 * 1024 * 1024)
-      $vm.MemoryMinimum | Should -BeExactly (512 * 1024 * 1024)
-      # $vm.MemoryMaximum | Should -BeExactly (2048*1024*1024)
+      $vm.MemoryMinimum | Should -BeExactly (256 * 1024 * 1024)
+      $vm.MemoryMaximum | Should -BeExactly (2048*1024*1024)
 
       $vm.HardDrives | Should -HaveCount 1
       $vhd = Get-VHD -Path $vm.HardDrives[0].Path
@@ -49,6 +50,20 @@ network_adapters:
       $vm.NetworkAdapters | Should -HaveCount 1
       $vm.NetworkAdapters[0].Name | Should -BeExactly 'public'
       $vm.NetworkAdapters[0].SwitchName | Should -BeExactly 'eryph_overlay'
+    }
+
+    It "Creates catlet without dynamic memory" {
+      $config = @'
+memory:
+  startup: 1024
+'@
+
+      New-Catlet -Name $catletName -ProjectName $project.Name -Config $config -SkipVariablesPrompt
+
+      $vm = Get-VM -Name $catletName
+
+      $vm.DynamicMemoryEnabled | Should -BeFalse
+      $vm.MemoryStartup | Should -BeExactly (1024 * 1024 * 1024)
     }
 
     It "Creates catlet when only the parent is provided" {
