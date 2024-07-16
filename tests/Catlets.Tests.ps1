@@ -14,6 +14,20 @@ Describe "Catlets" {
   
   Context "New-Catlet" {
 
+    It "Creates catlet without config" {
+      $config = @'
+name: catlet
+'@
+      New-Catlet -Name $catletName -ProjectName $project.Name -Config $config
+
+      $vm = Get-VM -Name $catletName
+
+      $vm.DynamicMemoryEnabled | Should -BeTrue
+      $vm.MemoryStartup | Should -BeExactly (1024 * 1024 * 1024)
+      $vm.MemoryMinimum | Should -BeExactly (512 * 1024 * 1024)
+      $vm.MemoryMaximum | Should -BeExactly (1 * 1024 * 1024 * 1024 * 1024)
+    }
+
     It "Creates properly configured catlet without parent" {
       $config = @'
 cpu:
@@ -41,7 +55,7 @@ network_adapters:
       $vm.DynamicMemoryEnabled | Should -BeTrue
       $vm.MemoryStartup | Should -BeExactly (1024 * 1024 * 1024)
       $vm.MemoryMinimum | Should -BeExactly (256 * 1024 * 1024)
-      $vm.MemoryMaximum | Should -BeExactly (2048*1024*1024)
+      $vm.MemoryMaximum | Should -BeExactly (2048 * 1024 * 1024)
 
       $vm.HardDrives | Should -HaveCount 1
       $vhd = Get-VHD -Path $vm.HardDrives[0].Path
@@ -56,6 +70,9 @@ network_adapters:
       $config = @'
 memory:
   startup: 1024
+capabilities:
+- name: dynamic_memory
+  details: ['disabled']
 '@
 
       New-Catlet -Name $catletName -ProjectName $project.Name -Config $config -SkipVariablesPrompt
