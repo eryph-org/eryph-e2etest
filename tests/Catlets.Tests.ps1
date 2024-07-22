@@ -172,6 +172,29 @@ fodder:
       )
     }
 
+    It "Creates catlet based on ubuntu starter" {
+      $config = @'
+parent: dbosoft/ubuntu-22.04/starter
+
+memory:
+  startup: 1024
+
+# variables:
+#   - name: password
+#     required: true
+#     secret: true
+
+fodder: 
+ - source: gene:dbosoft/starter-food:linux-starter
+  #  variables: 
+  #  - name: password
+  #    value: "{{ password }}"
+'@
+
+      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config -Variables @{ password = "foobar" } -SkipVariablesPrompt
+
+    }
+
     It "Fails when parent and child use different tags of the same gene set" {
       $config = @'
 parent: dbosoft/e2etests-os/greet-mars-0.2
@@ -212,9 +235,35 @@ cpu:
       $vm = Get-VM -Name $catletName
       $vm.ProcessorCount | Should -BeExactly 3
     }
+
+    It "Updates catlet even when required variables are not specified" {
+      $config = @'
+parent: dbosoft/e2etests-os/base
+memory:
+  startup: 1024
+variables:
+- name: userName
+  required: true
+fodder: 
+- name: add-user-greeting
+  type: shellscript
+  content: |
+    #!/bin/bash
+    echo 'Hello {{ userName }}!' >> hello-world.txt
+'@
+
+      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config -Variables @{ userName = "Eve" } -SkipVariablesPrompt
+
+      $updateConfig = $config.Replace('startup: 1024', 'startup: 2048')
+
+      Update-Catlet -Id $catlet.Id -Config $updateConfig
+
+      $vm = Get-VM -Name $catletName
+      $vm.MemoryStartup | Should -BeExactly (2048 * 1024 * 1024)
+    }
   }
 
   AfterEach {
-    #Remove-EryphProject -Id $project.Id
+    Remove-EryphProject -Id $project.Id
   }
 }
