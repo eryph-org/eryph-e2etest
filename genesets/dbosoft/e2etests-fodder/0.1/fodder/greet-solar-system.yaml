@@ -1,0 +1,11 @@
+name: greet-solar-system
+variables:
+  - name: systemName
+    type: String
+    value: sol
+fodder:
+  - name: add-planet-greeting
+    type: shellscript
+    content: |
+      #!/bin/bash
+      echo 'Hello inhabitants of the {{ systemName }} system!' >> hello-world.txt
