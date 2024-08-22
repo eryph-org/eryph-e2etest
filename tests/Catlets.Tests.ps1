@@ -220,6 +220,32 @@ fodder:
       $sshResponse.Output | Assert-Any { $_ -ilike '*Ubuntu*' }
     }
 
+    It "Creates catlet with separately created disk" {
+      $diskName = "testdisk-$(Get-Date -Format 'yyyyMMddHHmmss')"
+      $disk = New-CatletDisk -Name $diskName -Size 5 -ProjectName $project.Name -Location test
+
+      $config = @"
+parent: dbosoft/e2etests-os/base
+disks:
+drives:
+- name: '$diskName'
+  location: test
+"@
+      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config
+
+      $vm = Get-VM -Name $catletName
+
+      $vm.HardDrives | Should -HaveCount 2
+      $vm.HardDrives | Assert-Any { $_.Path -ieq "$($disk.Path)\$diskName.vhdx" }
+
+      # Remove the catlet and check if the separately created disk is still there
+      Remove-Catlet -Id $catlet.Id
+
+      $catletDisks = Get-CatletDisk -ProjectName $project.Name
+      $catletDisks | Should -HaveCount 1
+      $catletDisks | Assert-Any { $_.Id -eq $disk.Id }
+    }
+
     It "Fails when parent and child use different tags of the same gene set" {
       $config = @'
 parent: dbosoft/e2etests-os/greet-mars-0.2
