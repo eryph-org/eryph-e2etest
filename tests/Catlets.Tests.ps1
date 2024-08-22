@@ -193,7 +193,7 @@ fodder:
       $sshSession = Connect-Catlet -CatletId $catlet.Id
       $helloWorldResponse = Invoke-SSHCommand -Command "cat /hello-world.txt" -SSHSession $sshSession
       $helloWorldResponse.Output | Should -Be @(
-        "Hello inhabitents of planet Mars!"
+        "Hello inhabitants of planet Mars!"
         "Hello Andy Astronaut!"
       )
     }
@@ -201,23 +201,24 @@ fodder:
     It "Creates catlet based on ubuntu starter" {
       $config = @'
 parent: dbosoft/ubuntu-22.04/starter
-
 memory:
   startup: 1024
-
 variables:
-  - name: password
-    required: true
-    secret: true
-
+- name: password
+  required: true
+  secret: true
 fodder: 
- - source: gene:dbosoft/starter-food:linux-starter
-   variables: 
-   - name: password
-     value: "{{ password }}"
+- source: gene:dbosoft/starter-food:linux-starter
+  variables: 
+  - name: password
+    value: "{{ password }}"
 '@
 
-      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config -Variables @{ password = "foobar" }
+      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config -Variables @{ password = "myPassword" }
+
+      $sshSession = Connect-Catlet -CatletId $catlet.Id -Username admin -Password (ConvertTo-SecureString "myPassword" -AsPlainText -Force)
+      $sshResponse = Invoke-SSHCommand -Command "cat /etc/lsb-release" -SSHSession $sshSession
+      $sshResponse.Output | Assert-Any { $_ -ilike '*Ubuntu*' }
     }
 
     It "Fails when parent and child use different tags of the same gene set" {
