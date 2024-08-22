@@ -46,7 +46,7 @@ network_adapters:
 - name: public
 '@
 
-      New-Catlet -Name $catletName -ProjectName $project.Name -Config $config -SkipVariablesPrompt
+      New-Catlet -Name $catletName -ProjectName $project.Name -Config $config
 
       $vm = Get-VM -Name $catletName
 
@@ -75,7 +75,7 @@ capabilities:
   details: ['disabled']
 '@
 
-      New-Catlet -Name $catletName -ProjectName $project.Name -Config $config -SkipVariablesPrompt
+      New-Catlet -Name $catletName -ProjectName $project.Name -Config $config
 
       $vm = Get-VM -Name $catletName
 
@@ -84,7 +84,7 @@ capabilities:
     }
 
     It "Creates catlet when only the parent is provided" {
-      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Parent 'dbosoft/e2etests-os/base' -SkipVariablesPrompt
+      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Parent 'dbosoft/e2etests-os/base'
 
       $vm = Get-VM -Name $catletName
 
@@ -112,7 +112,7 @@ fodder:
     echo '{{ vmId }}' >> hyperv-vm-id.txt
 '@
                     
-      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config -SkipVariablesPrompt
+      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config
       
       $sshSession = Connect-Catlet -CatletId $catlet.Id
       $helloWorldResponse = Invoke-SSHCommand -Command "cat /hello-world.txt" -SSHSession $sshSession
@@ -133,7 +133,7 @@ fodder:
     value: Andy Astronaut
 '@
                   
-      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config -SkipVariablesPrompt
+      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config
       
       $sshSession = Connect-Catlet -CatletId $catlet.Id
       $helloWorldResponse = Invoke-SSHCommand -Command "cat /hello-world.txt" -SSHSession $sshSession
@@ -144,6 +144,32 @@ fodder:
       $configFromServer | Should -BeLike "*source: gene:dbosoft/e2etests-fodder/0.1:greet-user*"
     }
 
+    It "Creates catlet with many fodder genes" {
+      $config = @'
+parent: dbosoft/e2etests-os/base
+fodder: 
+- source: gene:dbosoft/e2etests-fodder:greet-default-users
+- source: gene:dbosoft/e2etests-fodder:greet-user
+  variables:
+  - name: userName
+    value: Andy Astronaut
+- source: gene:dbosoft/e2etests-fodder:greet-planet
+- source: gene:dbosoft/e2etests-fodder:greet-solar-system
+'@
+                  
+      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config
+      
+      $sshSession = Connect-Catlet -CatletId $catlet.Id
+      $helloWorldResponse = Invoke-SSHCommand -Command "cat /hello-world.txt" -SSHSession $sshSession
+      $helloWorldResponse.Output | Should -Be @(
+        'Hello Alice!'
+        'Hello Bob!'
+        'Hello Eve!'
+        'Hello Andy Astronaut!'
+        'Hello inhabitants of planet earth!'
+        'Hello inhabitants of the sol system!'
+      )
+    }
 
     It "Creates catlet with parameterized fodder in parent" {
       $config = @'
@@ -162,12 +188,12 @@ fodder:
   remove: true
 '@
                     
-      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config -SkipVariablesPrompt
+      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config
       
       $sshSession = Connect-Catlet -CatletId $catlet.Id
       $helloWorldResponse = Invoke-SSHCommand -Command "cat /hello-world.txt" -SSHSession $sshSession
       $helloWorldResponse.Output | Should -Be @(
-        "Hello inhabitents of planet Mars!"
+        "Hello inhabitants of planet Mars!"
         "Hello Andy Astronaut!"
       )
     }
@@ -175,24 +201,24 @@ fodder:
     It "Creates catlet based on ubuntu starter" {
       $config = @'
 parent: dbosoft/ubuntu-22.04/starter
-
 memory:
   startup: 1024
-
-# variables:
-#   - name: password
-#     required: true
-#     secret: true
-
+variables:
+- name: password
+  required: true
+  secret: true
 fodder: 
- - source: gene:dbosoft/starter-food:linux-starter
-  #  variables: 
-  #  - name: password
-  #    value: "{{ password }}"
+- source: gene:dbosoft/starter-food:linux-starter
+  variables: 
+  - name: password
+    value: "{{ password }}"
 '@
 
-      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config -Variables @{ password = "foobar" } -SkipVariablesPrompt
+      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config -Variables @{ password = "myPassword" }
 
+      $sshSession = Connect-Catlet -CatletId $catlet.Id -Username admin -Password (ConvertTo-SecureString "myPassword" -AsPlainText -Force)
+      $sshResponse = Invoke-SSHCommand -Command "cat /etc/lsb-release" -SSHSession $sshSession
+      $sshResponse.Output | Assert-Any { $_ -ilike '*Ubuntu*' }
     }
 
     It "Fails when parent and child use different tags of the same gene set" {
@@ -210,7 +236,7 @@ fodder:
     value: Andy Astronaut
 '@
                     
-      { New-Catlet -Name $catletName -ProjectName $project.Name -Config $config -SkipVariablesPrompt } |
+      { New-Catlet -Name $catletName -ProjectName $project.Name -Config $config } |
         Should -Throw "*The gene set 'dbosoft/e2etests-fodder' is used with different tags ('0.2', '0.1')*"
     }
   }
@@ -223,14 +249,14 @@ cpu:
   count: 2
 '@
 
-      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config -SkipVariablesPrompt
+      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config
 
       $updatedConfig = @'
 parent: dbosoft/e2etests-os/base
 cpu:
   count: 3
 '@
-      Update-Catlet -Id $catlet.Id -Config $updatedConfig -SkipVariablesPrompt
+      Update-Catlet -Id $catlet.Id -Config $updatedConfig
 
       $vm = Get-VM -Name $catletName
       $vm.ProcessorCount | Should -BeExactly 3
@@ -252,7 +278,7 @@ fodder:
     echo 'Hello {{ userName }}!' >> hello-world.txt
 '@
 
-      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config -Variables @{ userName = "Eve" } -SkipVariablesPrompt
+      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config -Variables @{ userName = "Eve" }
 
       $updateConfig = $config.Replace('startup: 1024', 'startup: 2048')
 

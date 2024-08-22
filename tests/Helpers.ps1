@@ -5,7 +5,15 @@ function Connect-Catlet {
   param(
     [Parameter(Mandatory = $true)]
     [guid]
-    $CatletId
+    $CatletId,
+
+    [Parameter()]
+    [string]
+    $Username = "e2e",
+
+    [Parameter()]
+    [securestring]
+    $Password = (ConvertTo-SecureString "e2e" -AsPlainText -Force)
   )
   
   $null = Start-Catlet -Id $CatletId -Force
@@ -13,7 +21,7 @@ function Connect-Catlet {
     
   Start-Sleep -Seconds 5
     
-  $credentials = [PSCredential]::New("e2e", (ConvertTo-SecureString "e2e" -AsPlainText -Force))
+  $credentials = [PSCredential]::New($Username, $Password)
     
   return New-SSHSession -ComputerName $catletIp.IpAddress -Credential $credentials -AcceptKey -Force
 }

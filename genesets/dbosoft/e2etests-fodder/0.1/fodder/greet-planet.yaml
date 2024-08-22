@@ -8,4 +8,4 @@ fodder:
     type: shellscript
     content: |
       #!/bin/bash
-      echo 'Hello inhabitents of planet {{ planetName }}!' >> hello-world.txt
+      echo 'Hello inhabitants of planet {{ planetName }}!' >> hello-world.txt
