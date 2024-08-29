@@ -23,4 +23,9 @@ Write-Output "Setting up local gene pool"
 & $PSScriptRoot/Setup-LocalGenePool.ps1
 
 Write-Output "Running tests..."
-Invoke-Pester -Path $PSScriptRoot/tests -CI -TagFilter "UbuntuStarter"
+$pesterConfig = New-PesterConfiguration
+$pesterConfig.Output.Verbosity = 'Detailed'
+$pesterConfig.Run.Exit = $True
+$pesterConfig.Run.Path = "$PSScriptRoot/tests"
+$pesterConfig.TestResult.Enabled = $True
+Invoke-Pester -Configuration $pesterConfig
