@@ -7,11 +7,19 @@ $EryphSettings = Get-Content -Raw -Path (Join-Path $PSScriptRoot "settings.json"
 | ConvertFrom-Json -AsHashtable
 
 if ($EryphSettings.EryphZeroPath) {
-  $env:Path = "$($settEryphSettingsings.EryphZeroPath);$($env:Path)"
+  $env:Path = "$($EryphSettings.EryphZeroPath);$($env:Path)"
+}
+
+if ($Env:E2E_ERYPH_ZERO_PATH) {
+  $env:Path = "$($Env:E2E_ERYPH_ZERO_PATH);$($env:Path)"
 }
 
 if ($EryphSettings.EryphPackerPath) {
   $env:Path = "$($EryphSettings.EryphPackerPath);$($env:Path)"
+}
+
+if ($Env:E2E_ERYPH_PACKER_PATH) {
+  $env:Path = "$($Env:E2E_ERYPH_PACKER_PATH);$($env:Path)"
 }
 
 if ($EryphSettings.ComputeClientPath) {

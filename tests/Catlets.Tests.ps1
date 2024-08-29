@@ -198,7 +198,7 @@ fodder:
       )
     }
 
-    It "Creates catlet based on ubuntu starter" {
+    It "Creates catlet based on ubuntu starter" -Tag "UbuntuStarter" {
       $config = @'
 parent: dbosoft/ubuntu-22.04/starter
 memory:
