@@ -40,8 +40,15 @@ fodder:
       - name: vsts-agent
         groups: [ "Administrators" ]
         passwd: '{{ agentPassword }}'
+- name: remove-defender
+  type: shellscript
+  fileName: Remove-Defender.ps1
+  content: |
+    #ps1_sysnative
+    Uninstall-WindowsFeature Windows-Defender
 - name: enable-drv-test-signing
   type: shellscript
+  fileName: Enable-TestSigning.ps1
   content: |
     #ps1_sysnative
     bcdedit /set testsigning on
