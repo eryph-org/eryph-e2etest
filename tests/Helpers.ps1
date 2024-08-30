@@ -23,7 +23,7 @@ function Connect-Catlet {
     
   $credentials = [PSCredential]::New($Username, $Password)
     
-  return New-SSHSession -ComputerName $catletIp.IpAddress -Credential $credentials -AcceptKey -Force
+  return New-SSHSession -ComputerName $catletIp.IpAddress -Credential $credentials -AcceptKey -Force -ConnectionTimeout 60
 }
 
 function New-TestProject {
