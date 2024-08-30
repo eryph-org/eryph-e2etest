@@ -18,12 +18,24 @@ function Connect-Catlet {
   
   $null = Start-Catlet -Id $CatletId -Force
   $catletIp = Get-CatletIp -Id $CatletId
-    
-  Start-Sleep -Seconds 5
-    
+  
+  $timeout = New-TimeSpan -Minutes 10
+  $start = Get-Date
   $credentials = [PSCredential]::New($Username, $Password)
-    
-  return New-SSHSession -ComputerName $catletIp.IpAddress -Credential $credentials -AcceptKey -Force -ConnectionTimeout 60
+
+  # Retry until the SSH session is established or the timeout is reached.
+  # Depending on the state of the catlet and the network, a connection
+  # attempt can either timeout or immediately fail.
+  while ($true) {
+    try {
+      return New-SSHSession -ComputerName $catletIp.IpAddress -Credential $credentials -AcceptKey -Force
+    } catch {
+      if (((Get-Date) - $start) -gt $timeout) {
+        throw
+      }
+      Start-Sleep -Seconds 5
+    }
+  }
 }
 
 function New-TestProject {
