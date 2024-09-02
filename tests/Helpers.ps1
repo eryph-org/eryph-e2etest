@@ -13,28 +13,55 @@ function Connect-Catlet {
 
     [Parameter()]
     [securestring]
-    $Password = (ConvertTo-SecureString "e2e" -AsPlainText -Force)
+    $Password = (ConvertTo-SecureString "e2e" -AsPlainText -Force),
+
+    [Parameter()]
+    [switch]
+    $WaitForCloudInit
   )
   
   $null = Start-Catlet -Id $CatletId -Force
   $catletIp = Get-CatletIp -Id $CatletId
   
+  # Remove the existing known host entry to avoid host key verification
+  # errors. We expect the host key to change as we just created a new catlet.
+  $null = Remove-SSHTrustedHost -HostName $catletIp.IpAddress
+
   $timeout = New-TimeSpan -Minutes 10
   $start = Get-Date
   $credentials = [PSCredential]::New($Username, $Password)
+  $sshSession = $null
 
   # Retry until the SSH session is established or the timeout is reached.
   # Depending on the state of the catlet and the network, a connection
   # attempt can either timeout or immediately fail.
-  while ($true) {
+  while (-not $sshSession) {
     try {
-      return New-SSHSession -ComputerName $catletIp.IpAddress -Credential $credentials -AcceptKey -Force
+      $sshSession = New-SSHSession -ComputerName $catletIp.IpAddress -Credential $credentials -AcceptKey
     } catch {
       if (((Get-Date) - $start) -gt $timeout) {
         throw
       }
       Start-Sleep -Seconds 5
     }
+  }
+
+  if (-not $WaitForCloudInit) {
+    return $sshSession
+  }
+  
+  while ($true) {
+    $result = Invoke-SSHCommand -Command "cloud-init status" -SSHSession $sshSession
+    if (($result.Output -inotlike '*not started*') -and ($result.Output -inotlike '*running*')) {
+      if (($result.Output -ilike '*degraded*') -or ($result.Output -ilike '*error*')) {
+        throw "cloud-init reported an error: $($result.Output)"
+      }
+      return $sshSession
+    }
+    if (((Get-Date) - $start) -gt $timeout) {
+      throw 'cloud-init did not finish within the timeout'
+    }
+    Start-Sleep -Seconds 5
   }
 }
 

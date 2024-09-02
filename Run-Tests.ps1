@@ -7,6 +7,7 @@ Write-Output "Going to run eryph end-to-end tests"
 
 Write-Output "Installing required Powershell modules..."
 Install-Module -Name Pester -Force -Scope CurrentUser
+Install-Module -Name Assert -Force -Scope CurrentUser
 Install-Module -Name Posh-SSH -Force -Scope CurrentUser
 Install-Module -Name Eryph.ComputeClient -Force -Scope CurrentUser
 

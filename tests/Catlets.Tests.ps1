@@ -1,5 +1,6 @@
 #Requires -Version 7.4
 #Requires -Module Pester
+#Requires -Module Assert
 BeforeAll {
   . $PSScriptRoot/../Use-Settings.ps1
   . $PSScriptRoot/Helpers.ps1
@@ -86,8 +87,6 @@ capabilities:
     It "Creates catlet when only the parent is provided" {
       $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Parent 'dbosoft/e2etests-os/base'
 
-      $vm = Get-VM -Name $catletName
-
       $configFromServer = Get-Catlet -Id $catlet.Id -Config
 
       $configFromServer | Should -Not -BeNullOrEmpty
@@ -114,7 +113,7 @@ fodder:
                     
       $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config
       
-      $sshSession = Connect-Catlet -CatletId $catlet.Id
+      $sshSession = Connect-Catlet -CatletId $catlet.Id -WaitForCloudInit
       $helloWorldResponse = Invoke-SSHCommand -Command "cat /hello-world.txt" -SSHSession $sshSession
       $helloWorldResponse.Output | Should -Be "Hello Eve E2E!"
 
@@ -135,7 +134,7 @@ fodder:
                   
       $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config
       
-      $sshSession = Connect-Catlet -CatletId $catlet.Id
+      $sshSession = Connect-Catlet -CatletId $catlet.Id -WaitForCloudInit
       $helloWorldResponse = Invoke-SSHCommand -Command "cat /hello-world.txt" -SSHSession $sshSession
       $helloWorldResponse.Output | Should -Be "Hello Andy Astronaut!"
 
@@ -159,7 +158,7 @@ fodder:
                   
       $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config
       
-      $sshSession = Connect-Catlet -CatletId $catlet.Id
+      $sshSession = Connect-Catlet -CatletId $catlet.Id -WaitForCloudInit
       $helloWorldResponse = Invoke-SSHCommand -Command "cat /hello-world.txt" -SSHSession $sshSession
       $helloWorldResponse.Output | Should -Be @(
         'Hello Alice!'
@@ -190,7 +189,7 @@ fodder:
                     
       $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config
       
-      $sshSession = Connect-Catlet -CatletId $catlet.Id
+      $sshSession = Connect-Catlet -CatletId $catlet.Id -WaitForCloudInit
       $helloWorldResponse = Invoke-SSHCommand -Command "cat /hello-world.txt" -SSHSession $sshSession
       $helloWorldResponse.Output | Should -Be @(
         "Hello inhabitants of planet Mars!"
@@ -216,7 +215,7 @@ fodder:
 
       $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config -Variables @{ password = "myPassword" }
 
-      $sshSession = Connect-Catlet -CatletId $catlet.Id -Username admin -Password (ConvertTo-SecureString "myPassword" -AsPlainText -Force)
+      $sshSession = Connect-Catlet -CatletId $catlet.Id -Username admin -Password (ConvertTo-SecureString "myPassword" -AsPlainText -Force) -WaitForCloudInit
       $sshResponse = Invoke-SSHCommand -Command "cat /etc/lsb-release" -SSHSession $sshSession
       $sshResponse.Output | Assert-Any { $_ -ilike '*Ubuntu*' }
     }
