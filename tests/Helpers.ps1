@@ -50,6 +50,9 @@ function Connect-Catlet {
     return $sshSession
   }
   
+  # Wait for cloud-init to finish. This is necessary as the SSH connection might already
+  # succeed while cloud-init is still running. Additionally, this also ensures that
+  # cloud-init did not fail.
   while ($true) {
     $result = Invoke-SSHCommand -Command "cloud-init status" -SSHSession $sshSession
     if (($result.Output -inotlike '*not started*') -and ($result.Output -inotlike '*running*')) {
