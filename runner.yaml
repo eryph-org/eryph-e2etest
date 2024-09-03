@@ -1,0 +1,94 @@
+name : e2etests-runner
+parent: dbosoft/winsrv2022-standard/starter
+hostname: E2ERUNNER
+cpu:
+  count: 4
+memory:
+  startup: 6144
+  minimum: 6144
+capabilities:
+- name: nested_virtualization
+- name: secure_boot
+  details: ['disabled']
+drives: 
+- name: sda
+  size: 100
+variables:
+- name: tenantId
+  required: true
+- name: clientId
+  required: true
+- name: clientSecret
+  secret: true
+  required: true
+- name: devopsUrls
+  required: true
+- name: poolName
+  required: true
+- name: agentName
+  required: true
+- name: agentPassword
+  secret: true
+  required: true
+
+fodder:
+- name: admin-windows
+  type: cloud-config
+  secret: true
+  content: |
+    users:
+      - name: vsts-agent
+        groups: [ "Administrators" ]
+        passwd: '{{ agentPassword }}'
+- name: remove-defender
+  type: shellscript
+  fileName: Remove-Defender.ps1
+  content: |
+    #ps1_sysnative
+    Uninstall-WindowsFeature Windows-Defender
+- name: enable-drv-test-signing
+  type: shellscript
+  fileName: Enable-TestSigning.ps1
+  content: |
+    #ps1_sysnative
+    bcdedit /set testsigning on
+- source: gene:dbosoft/hyperv:install
+- name: install-pwsh
+  type: shellscript
+  fileName: Install-Pwsh.ps1
+  content: |
+    #ps1_sysnative
+    $ProgressPreference = 'SilentlyContinue'
+    Invoke-WebRequest -Uri 'https://github.com/PowerShell/PowerShell/releases/download/v7.4.5/PowerShell-7.4.5-win-x64.msi' -OutFile C:\PowerShell-7.4.5-win-x64.msi
+    msiexec.exe /package C:\PowerShell-7.4.5-win-x64.msi /quiet ADD_EXPLORER_CONTEXT_MENU_OPENPOWERSHELL=1 ADD_FILE_CONTEXT_MENU_RUNPOWERSHELL=1 ENABLE_PSREMOTING=1 REGISTER_MANIFEST=1 USE_MU=1 ENABLE_MU=1 ADD_PATH=1
+- name: vsts-agent
+  type: shellscript
+  content: |
+    #ps1_sysnative
+    $ProgressPreference = 'SilentlyContinue'
+    Invoke-WebRequest https://vstsagentpackage.azureedge.net/agent/{{ agentVersion }}/vsts-agent-win-x64-{{ agentVersion }}.zip -outfile c:\vsts-agent.zip
+    Expand-Archive -Path c:\vsts-agent.zip -DestinationPath c:\a
+    rm vsts-agent.zip
+    cd c:\a
+    .\config.cmd --unattended --url {{ devopsUrls }} --auth SP --clientId {{ clientId }} --tenantId {{ tenantId }} --clientSecret {{ clientSecret }} --pool {{ poolName }} --agent {{ agentName }} --acceptTeeEula --replace --runAsService --windowsLogonAccount vsts-agent --windowsLogonPassword '{{ agentPassword }}'
+    exit 0
+  fileName: azure_agent.ps1
+  secret: true
+  #source: gene:dbosoft/vsts:agent-sp
+  variables:             
+  - name: agentVersion
+    value: '3.243.0'
+  - name: clientSecret
+    value: '{{ clientSecret }}'
+  - name: clientId
+    value: '{{ clientId }}'
+  - name: tenantId
+    value: '{{ tenantId }}'
+  - name: agentPassword
+    value: '{{ agentPassword }}'
+  - name: devopsUrls
+    value: '{{ devopsUrls }}'
+  - name: poolName
+    value: '{{ poolName }}'
+  - name: agentName
+    value: '{{ agentName }}'
