@@ -76,3 +76,52 @@ function New-TestProject {
 function New-CatletName {
   "catlet-$(Get-Date -Format 'yyyyMMddHHmmss')"
 }
+
+function Setup-Gene {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]
+    $GeneSetTag
+  )
+  $PSNativeCommandUseErrorActionPreference = $true
+  $ErrorActionPreference = 'Stop'
+
+  $geneSetsPath = (Resolve-Path -Path (Join-Path $PSScriptRoot ".." "genesets")).Path
+  $workPath = (Resolve-Path -Path (Join-Path $PSScriptRoot ".." ".work")).Path
+  
+  if ($GeneSetTag -eq "dbosoft/e2etests-nullos/0.1") {
+    # Create an empty volume the nullos geneset on the fly.
+    $null = New-Item -Path (Join-Path $workPath "dbosoft" "e2etests-nullos" "0.1") -ItemType Directory -Force
+    $null = New-Item -Path (Join-Path $geneSetsPath "dbosoft" "e2etests-nullos" "0.1" ".pack") -ItemType Directory -Force
+    Remove-Item -Path (Join-Path $workPath "dbosoft" "e2etests-nullos" "0.1" "sda.vhdx") -Force
+    $null = New-VHD -Path (Join-Path $workPath "dbosoft" "e2etests-nullos" "0.1" "sda.vhdx") -SizeBytes 26843545600 -Dynamic
+
+    $packable = @(@{
+      fullPath = (Join-Path $workPath "dbosoft" "e2etests-nullos" "0.1" "sda.vhdx")
+      fileName = "sda.vhdx"
+      geneType = "Volume"
+      geneName = "sda"
+      extremeCompression = $true
+    })
+    Set-Content -Path (Join-Path $geneSetsPath "dbosoft" "e2etests-nullos" "0.1" ".pack" "packable.json") -Value (ConvertTo-Json $packable)
+  }
+
+  eryph-packer geneset-tag pack $GeneSetTag --workdir $geneSetsPath
+  Remove-Item -Path (Join-Path $EryphSettings.LocalGenePoolPath $GeneSetTag) -Force -Recurse -ErrorAction SilentlyContinue
+  Copy-Item -Path (Join-Path $geneSetsPath $GeneSetTag ".packed") `
+    -Destination (Join-Path $EryphSettings.LocalGenePoolPath $GeneSetTag) `
+    -Recurse
+}
+
+function Setup-GenePool {
+  $PSNativeCommandUseErrorActionPreference = $true
+  $ErrorActionPreference = 'Stop'
+
+  $geneSetsPath = (Resolve-Path -Path (Join-Path $PSScriptRoot ".." "genesets")).Path
+
+  # The max depth of 3 prevents the script from picking up manifests inside the .packed directories
+  foreach ($manifestPath in (Get-ChildItem -Path $geneSetsPath -Filter "geneset-tag.json" -Depth 3 -Recurse)) {
+    $manifest = Get-Content -Raw -Path $manifestPath | ConvertFrom-Json -AsHashtable
+    Setup-Gene -GeneSetTag $manifest.geneset
+  }
+}

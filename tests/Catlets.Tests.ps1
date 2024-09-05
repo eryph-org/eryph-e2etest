@@ -4,6 +4,7 @@
 BeforeAll {
   . $PSScriptRoot/../Use-Settings.ps1
   . $PSScriptRoot/Helpers.ps1
+  Setup-GenePool
 }
 
 Describe "Catlets" {
