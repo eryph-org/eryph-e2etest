@@ -15,13 +15,18 @@ Install-Module -Name Eryph.ComputeClient -Force -Scope CurrentUser
 
 Write-Output "The following settings are configured"
 Write-Output "EryphZeroPath: $($EryphSettings.EryphZeroPath)"
+Write-Output "E2E_ERYPH_ZERO_PATH: $($env:E2E_ERYPH_ZERO_PATH)"
 Write-Output "EryphPackerPath: $($EryphSettings.EryphPackerPath)"
+Write-Output "E2E_ERYPH_PACKER_PATH: $($env:E2E_ERYPH_PACKER_PATH)"
 Write-Output "ComputeClientPath: $($EryphSettings.ComputeClientPath)"
+Write-Output "ComputeClientModulePath: $($EryphSettings.ComputeClientModulePath)"
+Write-Output "E2E_COMPUTE_CLIENT_MODULE_PATH: $($env:E2E_COMPUTE_CLIENT_MODULE_PATH)"
 Write-Output "LocalGenePoolPath: $($EryphSettings.LocalGenePoolPath)"
 Write-Output "Path: $($Env:Path)"
 
-Write-Output "Setting up local gene pool"
-& $PSScriptRoot/Setup-LocalGenePool.ps1
+Write-Output "The following compute client is used"
+Get-Module -Name Eryph.ComputeClient | Format-List
+Get-Module -Name Eryph.ComputeClient.Commands | Format-List
 
 Write-Output "Running tests..."
 $pesterConfig = New-PesterConfiguration
