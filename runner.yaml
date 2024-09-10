@@ -4,10 +4,11 @@ hostname: E2ERUNNER
 cpu:
   count: 4
 memory:
-  startup: 6144
-  minimum: 6144
+  startup: 12288
 capabilities:
 - name: nested_virtualization
+- name: dynamic_memory
+  details: ['disabled']
 - name: secure_boot
   details: ['disabled']
 drives: 
