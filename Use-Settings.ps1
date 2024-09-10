@@ -10,7 +10,7 @@ if ($EryphSettings.EryphZeroPath) {
   $env:Path = "$($EryphSettings.EryphZeroPath);$($env:Path)"
 }
 
-if ($Env:E2E_ERYPH_ZERO_PATH) {
+if ($env:E2E_ERYPH_ZERO_PATH) {
   $env:Path = "$($Env:E2E_ERYPH_ZERO_PATH);$($env:Path)"
 }
 
@@ -18,8 +18,16 @@ if ($EryphSettings.EryphPackerPath) {
   $env:Path = "$($EryphSettings.EryphPackerPath);$($env:Path)"
 }
 
-if ($Env:E2E_ERYPH_PACKER_PATH) {
+if ($env:E2E_ERYPH_PACKER_PATH) {
   $env:Path = "$($Env:E2E_ERYPH_PACKER_PATH);$($env:Path)"
+}
+
+if ($EryphSettings.ComputeClientModulePath) {
+  $env:PSModulePath = "$($EryphSettings.ComputeClientModulePath);$($env:PSModulePath)"
+}
+
+if ($env:E2E_COMPUTE_CLIENT_MODULE_PATH) {
+  $env:PSModulePath = "$($Env:E2E_COMPUTE_CLIENT_MODULE_PATH);$($env:PSModulePath)"
 }
 
 if ($EryphSettings.ComputeClientPath) {
