@@ -19,7 +19,7 @@ variables:
 - name: clientId
   required: true
 - name: clientSecret
-  secret: true
+  #secret: true
   required: true
 - name: devopsUrls
   required: true
@@ -28,13 +28,13 @@ variables:
 - name: agentName
   required: true
 - name: agentPassword
-  secret: true
+  #secret: true
   required: true
 
 fodder:
 - name: admin-windows
   type: cloud-config
-  secret: true
+  #secret: true
   content: |
     users:
       - name: vsts-agent
@@ -73,7 +73,7 @@ fodder:
     .\config.cmd --unattended --url {{ devopsUrls }} --auth SP --clientId {{ clientId }} --tenantId {{ tenantId }} --clientSecret {{ clientSecret }} --pool {{ poolName }} --agent {{ agentName }} --acceptTeeEula --replace --runAsService --windowsLogonAccount vsts-agent --windowsLogonPassword '{{ agentPassword }}'
     exit 0
   fileName: azure_agent.ps1
-  secret: true
+  #secret: true
   #source: gene:dbosoft/vsts:agent-sp
   variables:             
   - name: agentVersion
