@@ -4,7 +4,7 @@ hostname: E2ERUNNER
 cpu:
   count: 4
 memory:
-  startup: 12288
+  startup: 32768
 capabilities:
 - name: nested_virtualization
 - name: dynamic_memory
