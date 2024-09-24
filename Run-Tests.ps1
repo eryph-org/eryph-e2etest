@@ -28,9 +28,6 @@ Write-Output "The following compute client is used"
 Get-Module -Name Eryph.ComputeClient | Format-List
 Get-Module -Name Eryph.ComputeClient.Commands | Format-List
 
-Write-Output "Setting up local gene pool..."
-& $PSScriptRoot/Setup-LocalGenePool.ps1
-
 Write-Output "Running tests..."
 $pesterConfig = New-PesterConfiguration
 $pesterConfig.Output.Verbosity = 'Detailed'
