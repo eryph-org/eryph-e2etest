@@ -93,7 +93,7 @@ function Setup-Gene {
     # Create an empty volume the nullos geneset on the fly.
     $null = New-Item -Path (Join-Path $workPath "dbosoft" "e2etests-nullos" "0.1") -ItemType Directory -Force
     $null = New-Item -Path (Join-Path $geneSetsPath "dbosoft" "e2etests-nullos" "0.1" ".pack") -ItemType Directory -Force
-    Remove-Item -Path (Join-Path $workPath "dbosoft" "e2etests-nullos" "0.1" "sda.vhdx") -Force
+    Remove-Item -Path (Join-Path $workPath "dbosoft" "e2etests-nullos" "0.1" "sda.vhdx") -Force -ErrorAction SilentlyContinue
     $null = New-VHD -Path (Join-Path $workPath "dbosoft" "e2etests-nullos" "0.1" "sda.vhdx") -SizeBytes 26843545600 -Dynamic
 
     $packable = @(@{

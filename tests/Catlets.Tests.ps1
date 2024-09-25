@@ -315,7 +315,35 @@ fodder:
     }
   }
 
+  Context "Networking" {
+    It "Connects two catlets in the same project" {
+      $firstConfig = @'
+parent: dbosoft/e2etests-os/base
+hostname: first
+'@
+      $secondConfig = @'
+parent: dbosoft/e2etests-os/base
+hostname: second
+'@
+
+      $firstCatlet = New-Catlet -Name "$catletName-first" -ProjectName $project.Name -Config $firstConfig
+      Start-Catlet -Id $firstCatlet.Id -Force
+
+      $secondCatlet = New-Catlet -Name "$catletName-second" -ProjectName $project.Name -Config $secondConfig
+      Start-Catlet -Id $secondCatlet.Id -Force
+
+      $firstSshSession = Connect-Catlet -CatletId $firstCatlet.Id -WaitForCloudInit
+      $secondSshSession = Connect-Catlet -CatletId $secondCatlet.Id -WaitForCloudInit
+
+      $firstSshResponse = Invoke-SSHCommand -Command 'ping -c 1 -W 1 second.home.arpa; echo "exit code: $?"' -SSHSession $firstSshSession
+      $firstSshResponse.Output | Assert-Any { $_ -eq 'exit code: 0' }
+
+      $secondSshResponse = Invoke-SSHCommand -Command 'ping -c 1 -W 1 first.home.arpa; echo "exit code: $?"' -SSHSession $secondSshSession
+      $secondSshResponse.Output | Assert-Any { $_ -eq 'exit code: 0' }
+    }
+  }
+
   AfterEach {
-    Remove-EryphProject -Id $project.Id
+    Remove-EryphProject -Id $project.Id -Force
   }
 }
