@@ -86,8 +86,9 @@ function Setup-Gene {
   $PSNativeCommandUseErrorActionPreference = $true
   $ErrorActionPreference = 'Stop'
 
-  $geneSetsPath = (Resolve-Path -Path (Join-Path $PSScriptRoot ".." "genesets")).Path
-  $workPath = (Resolve-Path -Path (Join-Path $PSScriptRoot ".." ".work")).Path
+  $parentFolder = (Resolve-Path -Path (Join-Path $PSScriptRoot "..")).Path
+  $geneSetsPath = Join-Path $parentFolder "genesets"
+  $workPath = Join-Path $parentFolder ".work"
   
   if ($GeneSetTag -eq "dbosoft/e2etests-nullos/0.1") {
     # Create an empty volume the nullos geneset on the fly.
