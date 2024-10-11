@@ -10,6 +10,7 @@ BeforeAll {
 Describe "VirtualNetworks" {
   BeforeEach {
     $project = New-TestProject
+    $catletName = New-CatletName
   }
 
   Context "Set-VNetwork" {
@@ -30,6 +31,12 @@ networks:
 '@
       Set-VNetwork -ProjectName $project.Name -Config $networkConfig -Force
 
+      $projectNetworks = Get-VNetwork -ProjectName $project.Name
+      $projectNetworks | Should -HaveCount 1
+      $projectNetworks[0].Name | Should -Be 'test-network'
+      $projectNetworks[0].Environment | Should -Be 'default'
+      $projectNetworks[0].IpNetwork | Should -Be '10.0.100.0/28'
+
       $catletConfig = @'
 parent: dbosoft/e2etests-os/base
 networks:
@@ -38,9 +45,17 @@ networks:
     name: test-subnet
     ip_pool: test-pool
 '@
-      $catlet = New-Catlet -ProjectName $project.Name -Config $catletConfig
-      
-      # TODO validate catlet
+      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $catletConfig
+      $catlet.Networks | Should -HaveCount 1
+      $catlet.Networks[0].Name | Should -Be 'test-network'
+      $catlet.Networks[0].IpV4Addresses | Should -HaveCount 1
+      $catlet.Networks[0].IpV4Addresses | Should -Be '10.0.100.12'
+      $catlet.Networks[0].IpV4Subnets | Should -HaveCount 1
+      $catlet.Networks[0].IpV4Subnets[0] | Should -Be '10.0.100.0/28'
+
+      $sshSession = Connect-Catlet -CatletId $catlet.Id -WaitForCloudInit
+      $sshResponse = Invoke-SSHCommand -Command "ip addr" -SSHSession $sshSession
+      $sshResponse.Output | Assert-Any { $_ -ilike '*inet 10.0.100.12/28*' }
     }
   }
 
