@@ -33,14 +33,6 @@ variables:
   required: true
 
 fodder:
-# - name: admin-windows
-#   type: cloud-config
-#   secret: true
-#   content: |
-#     users:
-#       - name: vsts-agent
-#         groups: [ "Administrators" ]
-#         passwd: '{{ agentPassword }}'
 - name: remove-defender
   type: shellscript
   fileName: Remove-Defender.ps1
@@ -62,20 +54,7 @@ fodder:
     $ProgressPreference = 'SilentlyContinue'
     Invoke-WebRequest -Uri 'https://github.com/PowerShell/PowerShell/releases/download/v7.4.5/PowerShell-7.4.5-win-x64.msi' -OutFile C:\PowerShell-7.4.5-win-x64.msi
     msiexec.exe /package C:\PowerShell-7.4.5-win-x64.msi /quiet ADD_EXPLORER_CONTEXT_MENU_OPENPOWERSHELL=1 ADD_FILE_CONTEXT_MENU_RUNPOWERSHELL=1 ENABLE_PSREMOTING=1 REGISTER_MANIFEST=1 USE_MU=1 ENABLE_MU=1 ADD_PATH=1
-- name: vsts-agent
-  # type: shellscript
-  # content: |
-  #   #ps1_sysnative
-  #   $ProgressPreference = 'SilentlyContinue'
-  #   Invoke-WebRequest https://vstsagentpackage.azureedge.net/agent/{{ agentVersion }}/vsts-agent-win-x64-{{ agentVersion }}.zip -outfile c:\vsts-agent.zip
-  #   Expand-Archive -Path c:\vsts-agent.zip -DestinationPath c:\a
-  #   rm vsts-agent.zip
-  #   cd c:\a
-  #   .\config.cmd --unattended --url {{ devopsUrls }} --auth SP --clientId {{ clientId }} --tenantId {{ tenantId }} --clientSecret {{ clientSecret }} --pool {{ poolName }} --agent {{ agentName }} --acceptTeeEula --replace --runAsService --windowsLogonAccount vsts-agent --windowsLogonPassword '{{ agentPassword }}'
-  #   exit 0
-  # fileName: azure_agent.ps1
-  #secret: true
-  source: gene:dbosoft/vsts:agent-sp
+- source: gene:dbosoft/vsts:agent-sp
   variables:
   - name: clientSecret
     value: '{{ clientSecret }}'
