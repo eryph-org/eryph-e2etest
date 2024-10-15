@@ -10,6 +10,7 @@ Install-Module -Name Pester -Force -Scope CurrentUser
 Install-Module -Name Assert -Force -Scope CurrentUser
 Install-Module -Name Posh-SSH -Force -Scope CurrentUser
 Install-Module -Name Eryph.ComputeClient -Force -Scope CurrentUser
+Install-Module -Name Eryph.IdentityClient -Force -Scope CurrentUser
 
 . $PSScriptRoot/Use-Settings.ps1
 
@@ -21,12 +22,19 @@ Write-Output "E2E_ERYPH_PACKER_PATH: $($env:E2E_ERYPH_PACKER_PATH)"
 Write-Output "ComputeClientPath: $($EryphSettings.ComputeClientPath)"
 Write-Output "ComputeClientModulePath: $($EryphSettings.ComputeClientModulePath)"
 Write-Output "E2E_COMPUTE_CLIENT_MODULE_PATH: $($env:E2E_COMPUTE_CLIENT_MODULE_PATH)"
+Write-Output "IdentityClientPath: $($EryphSettings.IdentityClientPath)"
+Write-Output "IdentityClientModulePath: $($EryphSettings.IdentityClientModulePath)"
+Write-Output "E2E_IDENTITY_CLIENT_MODULE_PATH: $($env:E2E_IDENTITY_CLIENT_MODULE_PATH)"
 Write-Output "LocalGenePoolPath: $($EryphSettings.LocalGenePoolPath)"
 Write-Output "Path: $($Env:Path)"
 
 Write-Output "The following compute client is used"
 Get-Module -Name Eryph.ComputeClient | Format-List
 Get-Module -Name Eryph.ComputeClient.Commands | Format-List
+
+Write-Output "The following identity client is used"
+Get-Module -Name Eryph.IdentityClient | Format-List
+Get-Module -Name Eryph.IdentityClient.Commands | Format-List
 
 Write-Output "Running tests..."
 $pesterConfig = New-PesterConfiguration

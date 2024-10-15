@@ -46,7 +46,7 @@ if ($EryphSettings.IdentityClientModulePath) {
 }
 
 if ($env:E2E_IDENTITY_CLIENT_MODULE_PATH) {
-  $env:PSModulePath = "$($Env:E2E_IDENTITY_CLIENT_MODULE_PATH);$($env:PSModulePath)"
+  $env:PSModulePath = "$($env:E2E_IDENTITY_CLIENT_MODULE_PATH);$($env:PSModulePath)"
 }
 
 if ($EryphSettings.IdentityClientPath) {
