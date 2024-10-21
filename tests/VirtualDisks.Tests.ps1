@@ -63,7 +63,7 @@ drives:
       $disk.DataStore | Should -Be "default"
       $disk.Location | Should -Be "test"
       $disk.Path | Should -Exist
-      $disk.Path | Should -BeLike "*\$($project.Name)\test\$diskName.vhdx"
+      $disk.Path | Should -BeLike "*\p_$($project.Name)\test\$diskName.vhdx"
 
       $vhd = Get-VHD -Path $disk.Path
       $vhd | Should -Not -BeNull
