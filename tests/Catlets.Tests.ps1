@@ -237,7 +237,7 @@ drives:
       $vm = Get-VM -Name $catletName
 
       $vm.HardDrives | Should -HaveCount 2
-      $vm.HardDrives | Assert-Any { $_.Path -ieq "$($disk.Path)\$diskName.vhdx" }
+      $vm.HardDrives | Assert-Any { $_.Path -ieq $disk.Path }
 
       # Remove the catlet and check if the separately created disk is still there
       Remove-Catlet -Id $catlet.Id -Force
