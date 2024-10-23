@@ -70,7 +70,6 @@ drives:
       $vhd.Size | Should -Be 5GB
       $vhd.VhdFormat | Should -Be VHDX
       $vhd.VhdType | Should -Be Dynamic
-      
     }
   }
 

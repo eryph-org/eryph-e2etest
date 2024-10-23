@@ -13,7 +13,7 @@ Describe "ProjectMembers" {
     $project = New-TestProject
   }
 
-  It "Add and removes a project member" {
+  It "Adds and removes a project member" {
     $role = Add-EryphProjectMemberRole -ProjectName $project.Name -MemberId $client.Id -Role Reader
 
     $roles = Get-EryphProjectMemberRole -ProjectName $project.Name
