@@ -40,3 +40,22 @@ if ($EryphSettings.ComputeClientPath) {
 elseif (-not (Get-Module -Name "Eryph.ComputeClient")) {
   Import-Module Eryph.ComputeClient 
 }
+
+if ($EryphSettings.IdentityClientModulePath) {
+  $env:PSModulePath = "$($EryphSettings.IdentityClientModulePath);$($env:PSModulePath)"
+}
+
+if ($env:E2E_IDENTITY_CLIENT_MODULE_PATH) {
+  $env:PSModulePath = "$($env:E2E_IDENTITY_CLIENT_MODULE_PATH);$($env:PSModulePath)"
+}
+
+if ($EryphSettings.IdentityClientPath) {
+  if (-not (Get-module -Name "Eryph.IdentityClient.Commands")) {
+    Remove-Module Eryph.IdentityClient -Force -ErrorAction SilentlyContinue
+    Remove-Module (Join-Path $EryphSettings.IdentityClientPath "Eryph.IdentityClient.Commands.dll") -Force -ErrorAction SilentlyContinue
+    Import-Module (Join-Path $EryphSettings.IdentityClientPath "Eryph.IdentityClient.Commands.dll") -Force
+  }
+}
+elseif (-not (Get-Module -Name "Eryph.IdentityClient")) {
+  Import-Module Eryph.IdentityClient
+}
