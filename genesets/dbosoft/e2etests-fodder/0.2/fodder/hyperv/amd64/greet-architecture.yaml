@@ -1,0 +1,7 @@
+name: greet-architecture
+fodder:
+  - name: add-architecture-greeting
+    type: shellscript
+    content: |
+      #!/bin/bash
+      echo 'Using architecture hyperv/amd64.' >> hello-world.txt
