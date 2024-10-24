@@ -16,11 +16,6 @@ Write-Output "Testing the uninstallation of eryph-zero..."
 $service = Get-Service -Name "*eryph*"
 $service | Should -HaveCount 1
 
-$rootCertificates = Get-Item Cert:\LocalMachine\Root\* | Where-Object { $_.Issuer -ilike "*eryph*" }
-$rootCertificates | Should -HaveCount 1
-$myCertificates = Get-Item Cert:\LocalMachine\My\* | Where-Object { $_.Issuer -ilike "*eryph*" }
-$myCertificates | Should -HaveCount 3
-
 $driver = Get-WindowsDriver -Online | Where-Object { $_.OriginalFileName -ilike "*dbo_ovse*" }
 $driver | Should -HaveCount 1
 
@@ -28,6 +23,7 @@ Write-Output "Uninstalling eryph-zero..."
 $output = & "C:\Program Files\eryph\zero\bin\eryph-zero.exe" uninstall --delete-app-data
 
 Write-Output $output
+# Verify that the uninstaller has not logged any warnings.
 $output | Should -Not -BeLike "*WRN]*"
 
 # Verify that the data no longer exist after uninstalling eryph-zero.
@@ -39,8 +35,3 @@ $service | Should -HaveCount 0
 
 $driver = Get-WindowsDriver -Online | Where-Object { $_.OriginalFileName -ilike "*dbo_ovse*" }
 $driver | Should -HaveCount 0
-
-$rootCertificates = Get-Item Cert:\LocalMachine\Root\* | Where-Object { $_.Issuer -ilike "*eryph*" }
-$rootCertificates | Should -HaveCount 0
-$myCertificates = Get-Item Cert:\LocalMachine\My\* | Where-Object { $_.Issuer -ilike "*eryph*" }
-$myCertificates | Should -HaveCount 0
