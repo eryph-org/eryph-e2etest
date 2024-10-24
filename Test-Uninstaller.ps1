@@ -1,6 +1,6 @@
-# This script tests the uninstallation of eryph-zero. These tests are run
-# separately for sequencing reasons. Also, we do want to accidentally uninstall
-# eryph on a developer's machine.
+# This script tests the uninstaller of eryph-zero. These tests are run
+# separately for sequencing reasons. Also, we do not want to accidentally
+# uninstall eryph on a developer's machine.
 #Requires -Version 7.4
 #Requires -Module Pester
 
