@@ -13,7 +13,9 @@ Write-Output "Testing the uninstallation of eryph-zero..."
 "C:\ProgramData\eryph" | Should -Exist
 "C:\ProgramData\openvswitch" | Should -Exist
 
-$service = Get-Service -Name "*eryph*"
+# Checking for any service with eryph in its name does not work,
+# as the VSTS agent service might also contain eryph in its name.
+$service = Get-Service -Name "eryph-zero"
 $service | Should -HaveCount 1
 
 $driver = Get-WindowsDriver -Online | Where-Object { $_.OriginalFileName -ilike "*dbo_ovse*" }
@@ -30,7 +32,7 @@ $output | Should -Not -BeLike "*WRN]*"
 "C:\ProgramData\eryph" | Should -Not -Exist
 "C:\ProgramData\openvswitch" | Should -Not -Exist
 
-$service = Get-Service -Name "*eryph*"
+$service = Get-Service -Name "eryph-zero"
 $service | Should -HaveCount 0
 
 $driver = Get-WindowsDriver -Online | Where-Object { $_.OriginalFileName -ilike "*dbo_ovse*" }
