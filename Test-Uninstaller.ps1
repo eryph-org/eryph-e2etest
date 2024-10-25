@@ -32,7 +32,8 @@ $output | Should -Not -BeLike "*WRN]*"
 "C:\ProgramData\eryph" | Should -Not -Exist
 "C:\ProgramData\openvswitch" | Should -Not -Exist
 
-$service = Get-Service -Name "eryph-zero"
+# Get-Service returns an emtpy list instead of an error when we using a wildcard.
+$service = Get-Service -Name "*eryph-zero*"
 $service | Should -HaveCount 0
 
 $driver = Get-WindowsDriver -Online | Where-Object { $_.OriginalFileName -ilike "*dbo_ovse*" }
