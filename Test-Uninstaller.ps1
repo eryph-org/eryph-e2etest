@@ -7,7 +7,7 @@
 $PSNativeCommandUseErrorActionPreference = $true
 $ErrorActionPreference = 'Stop'
 
-Write-Output "Testing the uninstallation of eryph-zero..."
+Write-Output "Testing the uninstaller of eryph-zero..."
 
 # Verify that the expected data exists before uninstalling eryph-zero.
 "C:\ProgramData\eryph" | Should -Exist
@@ -28,11 +28,11 @@ Write-Output $output
 # Verify that the uninstaller has not logged any warnings.
 $output | Should -Not -BeLike "*WRN]*"
 
-# Verify that the data no longer exist after uninstalling eryph-zero.
+# Verify that the data no longer exists after uninstalling eryph-zero.
 "C:\ProgramData\eryph" | Should -Not -Exist
 "C:\ProgramData\openvswitch" | Should -Not -Exist
 
-# Get-Service returns an emtpy list instead of an error when we using a wildcard.
+# Get-Service returns an emtpy list instead of an error when using a wildcard.
 $service = Get-Service -Name "*eryph-zero*"
 $service | Should -HaveCount 0
 
