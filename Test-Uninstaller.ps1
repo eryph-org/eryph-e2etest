@@ -21,6 +21,11 @@ $service | Should -HaveCount 1
 $driver = Get-WindowsDriver -Online | Where-Object { $_.OriginalFileName -ilike "*dbo_ovse*" }
 $driver | Should -HaveCount 1
 
+$rootCertificates = Get-Item Cert:\LocalMachine\Root\* | Where-Object { $_.Issuer -ilike "*eryph*" }
+$rootCertificates | Should -HaveCount 1
+$myCertificates = Get-Item Cert:\LocalMachine\My\* | Where-Object { $_.Issuer -ilike "*eryph*" }
+$myCertificates | Should -HaveCount 3
+
 Write-Output "Uninstalling eryph-zero..."
 $output = & "C:\Program Files\eryph\zero\bin\eryph-zero.exe" uninstall --delete-app-data
 
@@ -38,3 +43,8 @@ $service | Should -HaveCount 0
 
 $driver = Get-WindowsDriver -Online | Where-Object { $_.OriginalFileName -ilike "*dbo_ovse*" }
 $driver | Should -HaveCount 0
+
+$rootCertificates = Get-Item Cert:\LocalMachine\Root\* | Where-Object { $_.Issuer -ilike "*eryph*" }
+$rootCertificates | Should -HaveCount 0
+$myCertificates = Get-Item Cert:\LocalMachine\My\* | Where-Object { $_.Issuer -ilike "*eryph*" }
+$myCertificates | Should -HaveCount 0
