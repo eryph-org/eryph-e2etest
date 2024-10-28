@@ -41,12 +41,16 @@ drives:
 
       $sdaParentDisk = Get-CatletDisk -Id $sdaDisk.ParentId
       $sdaParentDisk | Should -Not -BeNull
-      $sdaParentDisk.Location | Should -BeLike "gene:dbosoft/ubuntu-22.04*"
+      $sdaParentDisk.Location | Should -BeNull
       $sdaParentDisk.Name | Should -Be "sda"
       $sdaParentDisk.Project.Name | Should -Be "default"
       $sdaParentDisk.Environment | Should -Be "default"
       $sdaParentDisk.DataStore | Should -Be "default"
       $sdaParentDisk.ParentId | Should -BeNull
+      $sdaParentDisk.Gene | Should -Not -BeNull
+      $sdaParentDisk.Gene.GeneSet | Should -BeLike "dbosoft/ubuntu-22.04/*"
+      $sdaParentDisk.Gene.Name | Should -BeLike "sda"
+      $sdaParentDisk.Gene.Architecture | Should -Be "hyperv/amd64"
     }
   }
 

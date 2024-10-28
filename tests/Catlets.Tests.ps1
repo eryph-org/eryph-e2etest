@@ -155,6 +155,7 @@ fodder:
     value: Andy Astronaut
 - source: gene:dbosoft/e2etests-fodder:greet-planet
 - source: gene:dbosoft/e2etests-fodder:greet-solar-system
+- source: gene:dbosoft/e2etests-fodder:greet-architecture
 '@
                   
       $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config
@@ -168,6 +169,7 @@ fodder:
         'Hello Andy Astronaut!'
         'Hello inhabitants of planet earth!'
         'Hello inhabitants of the sol system!'
+        'Using architecture hyperv/amd64.'
       )
     }
 
