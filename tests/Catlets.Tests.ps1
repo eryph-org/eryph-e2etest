@@ -93,6 +93,37 @@ capabilities:
       $configFromServer | Should -Not -BeNullOrEmpty
     }
 
+    It "Creates catlet with shorthand configuration" {
+      $config = @'
+name: default
+parent: dbosoft/e2etests-os/base
+cpu: 1
+memory: 512
+capabilities:
+- nested_virtualization
+fodder:
+- name: add-file
+  type: cloud-config
+  content:
+    write_files:
+    - path: /cloud-init-test.txt
+      content: |
+        cloud-init says hello!
+'@
+      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config
+
+      $vm = Get-VM -Name $catletName
+      $vm.ProcessorCount | Should -BeExactly 1
+      $vm.MemoryStartup | Should -BeExactly 512MB
+
+      $vmProcessor = Get-VMProcessor -VM $vm
+      $vmProcessor.ExposeVirtualizationExtensions | Should -BeTrue
+
+      $sshSession = Connect-Catlet -CatletId $catlet.Id -WaitForCloudInit
+      $helloWorldResponse = Invoke-SSHCommand -Command "cat /cloud-init-test.txt" -SSHSession $sshSession
+      $helloWorldResponse.Output | Should -Be "cloud-init says hello!"
+    }
+
     It "Creates catlet with parameterized fodder" {
       $config = @'
 parent: dbosoft/e2etests-os/base
