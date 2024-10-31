@@ -36,6 +36,7 @@ networks:
       $projectNetworks[0].Name | Should -Be 'test-network'
       $projectNetworks[0].Environment | Should -Be 'default'
       $projectNetworks[0].IpNetwork | Should -Be '10.0.100.0/28'
+      $projectNetworks[0].ProviderName | Should -Be 'default'
 
       $catletConfig = @'
 parent: dbosoft/e2etests-os/base
@@ -56,6 +57,32 @@ networks:
       $sshSession = Connect-Catlet -CatletId $catlet.Id -WaitForCloudInit
       $sshResponse = Invoke-SSHCommand -Command "ip addr" -SSHSession $sshSession
       $sshResponse.Output | Assert-Any { $_ -ilike '*inet 10.0.100.12/28*' }
+    }
+
+    It "Accepts config with shorthands" {
+      $networkConfig = @'
+version: 1.0
+project: default
+networks:
+- name: test-network
+  provider: default
+  address: 10.0.100.0/28
+  subnets:
+  - name: test-subnet
+    ip_pools:
+    - name: test-pool
+      first_ip: 10.0.100.8
+      last_ip: 10.0.100.15
+      next_ip: 10.0.100.12
+'@
+      Set-VNetwork -ProjectName $project.Name -Config $networkConfig -Force
+
+      $projectNetworks = Get-VNetwork -ProjectName $project.Name
+      $projectNetworks | Should -HaveCount 1
+      $projectNetworks[0].Name | Should -Be 'test-network'
+      $projectNetworks[0].Environment | Should -Be 'default'
+      $projectNetworks[0].IpNetwork | Should -Be '10.0.100.0/28'
+      $projectNetworks[0].ProviderName | Should -Be 'default'
     }
   }
 
