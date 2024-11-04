@@ -260,7 +260,6 @@ fodder:
 
       $config = @"
 parent: dbosoft/e2etests-os/base
-disks:
 drives:
 - name: '$diskName'
   location: test

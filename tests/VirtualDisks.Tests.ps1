@@ -19,7 +19,6 @@ Describe "VirtualDisks" {
       $disk = New-CatletDisk -Name $diskName -Size 5 -ProjectName $project.Name -Location test
       $config = @"
 parent: dbosoft/e2etests-os/base
-disks:
 drives:
 - name: '$diskName'
   location: test
@@ -82,7 +81,6 @@ drives:
       $disk = New-CatletDisk -Name $diskName -Size 5 -ProjectName $project.Name -Location test
       $config = @"
 parent: dbosoft/e2etests-os/base
-disks:
 drives:
 - name: '$diskName'
   location: test
