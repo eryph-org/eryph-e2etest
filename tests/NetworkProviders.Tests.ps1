@@ -26,7 +26,7 @@ Describe "VirtualNetworks" {
       $flatSwitch = New-VMSwitch -Name $flatSwitchName -SwitchType Internal
     }
 
-    New-NetIPAddress -InterfaceAlias "vEthernet ($flatSwitchName)" -IPAddress 172.22.43.1 -PrefixLength 24
+    New-NetIPAddress -InterfaceAlias "vEthernet ($flatSwitchName)" -IPAddress 172.22.43.42 -PrefixLength 24
     
     $providersConfigBackup = eryph-zero.exe networks get
     
@@ -144,9 +144,23 @@ networks:
 #   adapter_name: eth1
 - name: test-flat-network
   adapter_name: eth2
+fodder:
+- name: set-static-ip
+  type: cloud-config
+  content:
+    write_files:
+    - path: /etc/systemd/network/10-static-eth2.network
+      content: |
+        [Match]
+        Name=eth2
+        [Network]
+        Address=172.22.43.43/24
+        Gateway=172.22.43.1
+        DNS=8.8.8.8
 '@
   
       $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $catletConfig
+      $sshSession = Connect-Catlet -CatletId $catlet.Id -WaitForCloudInit
     }
 
   }
