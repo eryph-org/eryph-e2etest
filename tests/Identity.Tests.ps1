@@ -47,6 +47,14 @@ Describe "Identity" {
     $computeResponse.value[0].id | Should -Be $project.Id
   }
 
+  Context "Get-EryphAccessToken" {
+    It "Returns an access token" {
+      $accessToken = Get-EryphAccessToken -Scopes "compute:write"
+
+      $accessToken.Scopes | Should -Be "compute:write"
+    }
+  }
+
   AfterEach {
     Remove-EryphClient -Id $client.Id
     Remove-EryphProject -Id $project.Id -Force

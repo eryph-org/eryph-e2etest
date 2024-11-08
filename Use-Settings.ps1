@@ -23,7 +23,7 @@ if ($env:E2E_ERYPH_PACKER_PATH) {
 }
 
 if ($EryphSettings.ClientRuntimeModulePath) {
-  $env:PSModulePath = "$($EryphSettings.ComputeClientModulePath);$($env:PSModulePath)"
+  $env:PSModulePath = "$($EryphSettings.ClientRuntimeModulePath);$($env:PSModulePath)"
 }
 
 if ($env:E2E_CLIENT_RUNTIME_MODULE_PATH) {
