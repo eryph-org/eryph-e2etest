@@ -19,22 +19,23 @@ Write-Output "EryphZeroPath: $($EryphSettings.EryphZeroPath)"
 Write-Output "E2E_ERYPH_ZERO_PATH: $($env:E2E_ERYPH_ZERO_PATH)"
 Write-Output "EryphPackerPath: $($EryphSettings.EryphPackerPath)"
 Write-Output "E2E_ERYPH_PACKER_PATH: $($env:E2E_ERYPH_PACKER_PATH)"
-Write-Output "ComputeClientPath: $($EryphSettings.ComputeClientPath)"
+Write-Output "ClientRuntimeModulePath: $($EryphSettings.ClientRuntimeModulePath)"
+Write-Output "E2E_CLIENT_RUNTIME_MODULE_PATH: $($env:E2E_CLIENT_RUNTIME_MODULE_PATH)"
 Write-Output "ComputeClientModulePath: $($EryphSettings.ComputeClientModulePath)"
 Write-Output "E2E_COMPUTE_CLIENT_MODULE_PATH: $($env:E2E_COMPUTE_CLIENT_MODULE_PATH)"
-Write-Output "IdentityClientPath: $($EryphSettings.IdentityClientPath)"
 Write-Output "IdentityClientModulePath: $($EryphSettings.IdentityClientModulePath)"
 Write-Output "E2E_IDENTITY_CLIENT_MODULE_PATH: $($env:E2E_IDENTITY_CLIENT_MODULE_PATH)"
 Write-Output "LocalGenePoolPath: $($EryphSettings.LocalGenePoolPath)"
 Write-Output "Path: $($Env:Path)"
 
+Write-Output "The following client runtime module is used"
+Get-Module -Name Eryph.ClientRuntime.Configuration | Format-List
+
 Write-Output "The following compute client is used"
 Get-Module -Name Eryph.ComputeClient | Format-List
-Get-Module -Name Eryph.ComputeClient.Commands | Format-List
 
 Write-Output "The following identity client is used"
 Get-Module -Name Eryph.IdentityClient | Format-List
-Get-Module -Name Eryph.IdentityClient.Commands | Format-List
 
 Write-Output "Running tests..."
 $pesterConfig = New-PesterConfiguration
