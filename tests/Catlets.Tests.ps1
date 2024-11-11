@@ -253,6 +253,10 @@ fodder:
       $sshSession = Connect-Catlet -CatletId $catlet.Id -Username admin -Password (ConvertTo-SecureString "myPassword" -AsPlainText -Force) -WaitForCloudInit
       $sshResponse = Invoke-SSHCommand -Command "cat /etc/lsb-release" -SSHSession $sshSession
       $sshResponse.Output | Assert-Any { $_ -ilike '*Ubuntu*' }
+
+      # Verify that the starter considers the generated cloud-init config valid.
+      $sshResponse = Invoke-SSHCommand -Command "sudo cloud-init schema --system" -SSHSession $sshSession
+      $sshResponse.ExitStatus  | Should -Be 0
     }
 
     It "Creates catlet with separately created disk" {
@@ -378,11 +382,11 @@ hostname: second
       $firstSshSession = Connect-Catlet -CatletId $firstCatlet.Id -WaitForCloudInit
       $secondSshSession = Connect-Catlet -CatletId $secondCatlet.Id -WaitForCloudInit
 
-      $firstSshResponse = Invoke-SSHCommand -Command 'ping -c 1 -W 1 second.home.arpa; echo "exit code: $?"' -SSHSession $firstSshSession
-      $firstSshResponse.Output | Assert-Any { $_ -eq 'exit code: 0' }
+      $firstSshResponse = Invoke-SSHCommand -Command 'ping -c 1 -W 1 second.home.arpa' -SSHSession $firstSshSession
+      $firstSshResponse.ExitStatus  | Should -Be 0
 
-      $secondSshResponse = Invoke-SSHCommand -Command 'ping -c 1 -W 1 first.home.arpa; echo "exit code: $?"' -SSHSession $secondSshSession
-      $secondSshResponse.Output | Assert-Any { $_ -eq 'exit code: 0' }
+      $secondSshResponse = Invoke-SSHCommand -Command 'ping -c 1 -W 1 first.home.arpa' -SSHSession $secondSshSession
+      $secondSshResponse.ExitStatus  | Should -Be 0
     }
   }
 
