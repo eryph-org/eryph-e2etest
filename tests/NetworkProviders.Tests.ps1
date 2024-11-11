@@ -9,16 +9,16 @@ BeforeAll {
 
 Describe "VirtualNetworks" {
   BeforeAll {
-    $loopbackAdapterName = 'eryph-e2e-loopback'
-    $loopbackAdapter = Get-NetAdapter -Name $loopbackAdapterName -ErrorAction SilentlyContinue
-    if (-not $loopbackAdapter) {
-      throw "Loopback adapter $loopbackAdapterName not found. The end-to-end tests require a loopback adapter."
-    }
-    $loopbackAdapterIpAddress = "172.22.42.5"
-    $loopbackAdapterIp = Get-NetIPAddress -IPAddress $loopbackAdapterIpAddress -InterfaceAlias $loopbackAdapterName -ErrorAction SilentlyContinue
-    if (-not $loopbackAdapterIp) {
-      New-NetIPAddress -InterfaceAlias $loopbackAdapterName -IPAddress $loopbackAdapterIpAddress -PrefixLength 24
-    }
+    # $loopbackAdapterName = 'eryph-e2e-loopback'
+    # $loopbackAdapter = Get-NetAdapter -Name $loopbackAdapterName -ErrorAction SilentlyContinue
+    # if (-not $loopbackAdapter) {
+    #   throw "Loopback adapter $loopbackAdapterName not found. The end-to-end tests require a loopback adapter."
+    # }
+    # $loopbackAdapterIpAddress = "172.22.42.5"
+    # $loopbackAdapterIp = Get-NetIPAddress -IPAddress $loopbackAdapterIpAddress -InterfaceAlias $loopbackAdapterName -ErrorAction SilentlyContinue
+    # if (-not $loopbackAdapterIp) {
+    #   New-NetIPAddress -InterfaceAlias $loopbackAdapterName -IPAddress $loopbackAdapterIpAddress -PrefixLength 24
+    # }
 
     $flatSwitchName = 'eryph-e2e-flat-switch'
     $flatSwitch = Get-VMSwitch -Name $flatSwitchName -ErrorAction SilentlyContinue
@@ -26,7 +26,7 @@ Describe "VirtualNetworks" {
       $flatSwitch = New-VMSwitch -Name $flatSwitchName -SwitchType Internal
     }
 
-    New-NetIPAddress -InterfaceAlias "vEthernet ($flatSwitchName)" -IPAddress 172.22.43.42 -PrefixLength 24
+    New-NetIPAddress -InterfaceAlias "vEthernet ($flatSwitchName)" -IPAddress 172.22.42.42 -PrefixLength 24
     
     $providersConfigBackup = eryph-zero.exe networks get
     
@@ -87,6 +87,16 @@ networks:
       first_ip: 10.0.100.8
       last_ip: 10.0.100.15
       next_ip: 10.0.100.12
+- name: second
+  provider: default
+  address: 10.0.101.0/28
+  subnets:
+  - name: default
+    ip_pools:
+    - name: default
+      first_ip: 10.0.101.8
+      last_ip: 10.0.101.15
+      next_ip: 10.0.101.12
 # - name: test-overlay-network
 #   provider: test-overlay
 #   address: 10.0.101.0/28
@@ -148,6 +158,8 @@ fodder:
 - name: set-static-ip
   type: cloud-config
   content:
+    network:
+      config: disabled
     write_files:
     - path: /etc/systemd/network/10-static-eth2.network
       content: |
@@ -162,8 +174,59 @@ fodder:
       $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $catletConfig
       $sshSession = Connect-Catlet -CatletId $catlet.Id -WaitForCloudInit
     }
+  
+    It "Connects catlet to flat network after the catlet has been started" {
+      # Eryph does not support static IP assignments yet. Hence, we cannot
+      # configure the flat network before the first boot. The catlet would
+      # hand for an extended period of time waiting for DHCP response which
+      # will not arrive as the flat network does not have a DHCP server.
+
+      $catletConfig = @"
+name: $catletName
+project: $($project.Name)
+parent: dbosoft/e2etests-os/base
+network_adapters:
+- name: eth0
+networks:
+- name: default
+  adapter_name: eth0
+"@
+  
+      $catlet = New-Catlet -Config $catletConfig
+      $sshSession = Connect-Catlet -CatletId $catlet.Id -WaitForCloudInit
+  
+      $updatedCatletConfig = @"
+name: $catletName
+project: $($project.Name)
+parent: dbosoft/e2etests-os/base
+network_adapters:
+- name: eth0
+- name: eth1
+networks:
+- name: default
+  adapter_name: eth0
+- name: test-flat-network
+  adapter_name: eth1
+"@
+
+      Update-Catlet -Id $catlet.Id -Config $updatedCatletConfig
+
+      # TODO this currently fails as the network breaks after the catlet update
+      $sshResponse = Invoke-SSHCommand -Command 'sudo ip link set eth1 up' -SSHSession $sshSession
+      $sshResponse.ExitStatus  | Should -Be 0
+
+      $sshResponse = Invoke-SSHCommand -Command 'sudo ip addr add 172.22.42.43/24 dev eth1' -SSHSession $sshSession
+      $sshResponse.ExitStatus  | Should -Be 0
+
+      $credentials = [PSCredential]::New('e2e', 'e2e')
+      $flatSshSession = $sshSession = New-SSHSession -ComputerName '172.22.42.43' -Credential $credentials -AcceptKey
+      $flatSshResponse = Invoke-SSHCommand -Command 'hostname' -SSHSession $flatSshSession
+      $flatSshResponse.Output | Should -Be $catletName
+    }
 
   }
+
+
 
   AfterEach {
     #Remove-EryphProject -Id $project.Id -Force
