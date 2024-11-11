@@ -60,6 +60,7 @@ network_adapters:
       $vm.MemoryMaximum | Should -BeExactly (2048 * 1024 * 1024)
 
       $vm.HardDrives | Should -HaveCount 1
+      $vm.HardDrives[0].Path | Should -BeLike "*\p_$($project.Name)\*\sda.vhdx"
       $vhd = Get-VHD -Path $vm.HardDrives[0].Path
       $vhd.Size | Should -BeExactly (50 * 1024 * 1024 * 1024)
 
@@ -300,20 +301,28 @@ fodder:
   }
 
   Describe "Update-Catlet" {
+    # When updating a catlet, the name and project must be specified
+    # in the config. Otherwise, eryph assumes the default values and
+    # moves and renames the catlet.
+
     It "Updates catlet when parent is not changed" {
-      $config = @'
+      $config = @"
+name: $catletName
+project: $($project.Name)
 parent: dbosoft/e2etests-os/base
 cpu:
   count: 2
-'@
+"@
 
-      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config
+      $catlet = New-Catlet s-Config $config
 
-      $updatedConfig = @'
+      $updatedConfig = @"
+name: $catletName
+project: $($project.Name)
 parent: dbosoft/e2etests-os/base
 cpu:
   count: 3
-'@
+"@
       Update-Catlet -Id $catlet.Id -Config $updatedConfig
 
       $vm = Get-VM -Name $catletName
@@ -321,7 +330,9 @@ cpu:
     }
 
     It "Updates catlet even when required variables are not specified" {
-      $config = @'
+      $config = @"
+name: $catletName
+project: $($project.Name)
 parent: dbosoft/e2etests-os/base
 memory:
   startup: 1024
@@ -334,9 +345,9 @@ fodder:
   content: |
     #!/bin/bash
     echo 'Hello {{ userName }}!' >> hello-world.txt
-'@
+"@
 
-      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config -Variables @{ userName = "Eve" }
+      $catlet = New-Catlet -Config $config -Variables @{ userName = "Eve" }
 
       $updateConfig = $config.Replace('startup: 1024', 'startup: 2048')
 
