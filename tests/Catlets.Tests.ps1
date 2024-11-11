@@ -314,7 +314,7 @@ cpu:
   count: 2
 "@
 
-      $catlet = New-Catlet s-Config $config
+      $catlet = New-Catlet -Config $config
 
       $updatedConfig = @"
 name: $catletName
