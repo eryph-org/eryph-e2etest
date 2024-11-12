@@ -23,28 +23,8 @@ function Connect-Catlet {
   $null = Start-Catlet -Id $CatletId -Force
   $catletIp = Get-CatletIp -Id $CatletId
   
-  # Remove the existing known host entry to avoid host key verification
-  # errors. We expect the host key to change as we just created a new catlet.
-  $null = Remove-SSHTrustedHost -HostName $catletIp.IpAddress
-
-  $timeout = New-TimeSpan -Minutes 10
-  $start = Get-Date
-  $credentials = [PSCredential]::New($Username, $Password)
-  $sshSession = $null
-
-  # Retry until the SSH session is established or the timeout is reached.
-  # Depending on the state of the catlet and the network, a connection
-  # attempt can either timeout or immediately fail.
-  while (-not $sshSession) {
-    try {
-      $sshSession = New-SSHSession -ComputerName $catletIp.IpAddress -Credential $credentials -AcceptKey
-    } catch {
-      if (((Get-Date) - $start) -gt $timeout) {
-        throw
-      }
-      Start-Sleep -Seconds 5
-    }
-  }
+  $timeout = (Get-Date).AddMinutes(10)
+  $sshSession = Connect-Ssh -ComputerName $catletIp[0].IpAddress -Username $Username -Password $Password -Timeout $timeout
 
   if (-not $WaitForCloudInit) {
     return $sshSession
@@ -61,11 +41,54 @@ function Connect-Catlet {
       }
       return $sshSession
     }
-    if (((Get-Date) - $start) -gt $timeout) {
+    if ((Get-Date) -gt $timeout) {
       throw 'cloud-init did not finish within the timeout'
     }
     Start-Sleep -Seconds 5
   }
+}
+
+function Connect-Ssh {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]
+    $ComputerName,
+
+    [Parameter()]
+    [string]
+    $Username = "e2e",
+
+    [Parameter()]
+    [securestring]
+    $Password = (ConvertTo-SecureString "e2e" -AsPlainText -Force),
+
+    [Parameter()]
+    [datetime]
+    $Timeout = (Get-Date).AddMinutes(10)
+  )
+  
+  # Remove the existing known host entry to avoid host key verification
+  # errors. We expect the host key to change as we just created a new catlet.
+  $null = Remove-SSHTrustedHost -HostName $ComputerName
+
+  $credentials = [PSCredential]::New($Username, $Password)
+  $sshSession = $null
+
+  # Retry until the SSH session is established or the timeout is reached.
+  # Depending on the state of the catlet and the network, a connection
+  # attempt can either timeout or immediately fail.
+  while (-not $sshSession) {
+    try {
+      $sshSession = New-SSHSession -ComputerName $ComputerName -Credential $credentials -AcceptKey
+    } catch {
+      if ((Get-Date) -gt $Timeout) {
+        throw 'Failed to establish an SSH session within the timeout'
+      }
+      Start-Sleep -Seconds 5
+    }
+  }
+
+  return $sshSession
 }
 
 function New-TestProject {

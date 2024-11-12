@@ -209,8 +209,15 @@ networks:
   adapter_name: eth1
 "@
 
+      # Disconnect the SSH session before updating the catlet's network configuration.
+      # The update will shortly disconnect the netwwork which woul cause the SSH session
+      # to fail with an error.
+      # TODO investigate if it is expected that the network disconnects
+      Remove-SSHSession $sshSession
+      
       Update-Catlet -Id $catlet.Id -Config $updatedCatletConfig
 
+      $sshSession = Connect-Catlet -CatletId $catlet.Id -WaitForCloudInit
       # TODO this currently fails as the network breaks after the catlet update
       $sshResponse = Invoke-SSHCommand -Command 'sudo ip link set eth1 up' -SSHSession $sshSession
       $sshResponse.ExitStatus  | Should -Be 0
@@ -218,10 +225,11 @@ networks:
       $sshResponse = Invoke-SSHCommand -Command 'sudo ip addr add 172.22.42.43/24 dev eth1' -SSHSession $sshSession
       $sshResponse.ExitStatus  | Should -Be 0
 
-      $credentials = [PSCredential]::New('e2e', 'e2e')
-      $flatSshSession = $sshSession = New-SSHSession -ComputerName '172.22.42.43' -Credential $credentials -AcceptKey
+      $flatSshSession = Connect-Ssh -ComputerName '172.22.42.43'
       $flatSshResponse = Invoke-SSHCommand -Command 'hostname' -SSHSession $flatSshSession
       $flatSshResponse.Output | Should -Be $catletName
+
+      # TODO Verify that get-catlet/get-catletip returns correct reported IPs for flat networks
     }
 
   }
