@@ -7,7 +7,7 @@ BeforeAll {
   Setup-GenePool
 }
 
-Describe "VirtualNetworks" {
+Describe "NetworkProviders" {
   BeforeAll {
     $flatSwitchName = 'eryph-e2e-flat-switch'
     $flatSwitch = Get-VMSwitch -Name $flatSwitchName -ErrorAction SilentlyContinue
@@ -147,7 +147,6 @@ networks:
 
       Update-Catlet -Id $catlet.Id -Config $updatedCatletConfig
 
-      # $sshSession = Connect-Catlet -CatletId $catlet.Id -WaitForCloudInit
       $sshResponse = Invoke-SSHCommand -Command 'sudo ip link set eth1 up' -SSHSession $sshSession
       $sshResponse.ExitStatus  | Should -Be 0
 
@@ -166,7 +165,7 @@ networks:
       
       $internalCatletIps = Get-CatletIp -Id $catlet.Id -Internal
       $internalCatletIps | Assert-Any { $_.IpAddress -eq '10.0.101.12' }
-      # Currently, the inventory does not updated the reported IP addresses
+      # Currently, the inventory does not update the reported IP addresses
       # quickly. Hence, we cannot assert the IP address of the flat network.
       # TODO Update this test after implementing https://github.com/eryph-org/eryph/issues/210
     }
@@ -177,7 +176,7 @@ networks:
   }
 
   AfterAll {
-    $providersConfigBackup | eryph-zero.exe networks import
+    $providersConfigBackup | eryph-zero.exe networks import --non-interactive
     Remove-VMSwitch -Name $flatSwitchName -Force
   }
 }
