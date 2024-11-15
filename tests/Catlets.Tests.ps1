@@ -245,7 +245,7 @@ fodder:
 - source: gene:dbosoft/starter-food:linux-starter
   variables: 
   - name: password
-    value: "{{ password }}"
+    value: '{{ password }}'
 '@
 
       $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config -Variables @{ password = "myPassword" }
@@ -253,10 +253,6 @@ fodder:
       $sshSession = Connect-Catlet -CatletId $catlet.Id -Username admin -Password (ConvertTo-SecureString "myPassword" -AsPlainText -Force) -WaitForCloudInit
       $sshResponse = Invoke-SSHCommand -Command "cat /etc/lsb-release" -SSHSession $sshSession
       $sshResponse.Output | Assert-Any { $_ -ilike '*Ubuntu*' }
-
-      # Verify that the starter considers the generated cloud-init config valid.
-      $sshResponse = Invoke-SSHCommand -Command "sudo cloud-init schema --system" -SSHSession $sshSession
-      $sshResponse.ExitStatus  | Should -Be 0
     }
 
     It "Creates catlet with separately created disk" {

@@ -89,12 +89,18 @@ function Connect-CatletIp {
       if (($result.Output -ilike '*degraded*') -or ($result.Output -ilike '*error*')) {
         throw "cloud-init reported an error: $($result.Output)"
       }
-      return $sshSession
+      break
     }
     if ((Get-Date) -gt $cutOff) {
-      throw 'cloud-init did not finish within the timeout'
+      throw "cloud-init did not finish within the timeout and still reports: $($result.Output)"
     }
     Start-Sleep -Seconds 5
+  }
+
+  # Verify that our cloud-init config is valid.
+  $schemaResult = Invoke-SSHCommand -Command "sudo cloud-init schema --system" -SSHSession $sshSession
+  if ($schemaResult.ExitStatus -ne 0) {
+    throw "cloud-init reports that the config is invalid:  $($schemaResult.Output)"
   }
 
   return $sshSession
