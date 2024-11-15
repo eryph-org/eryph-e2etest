@@ -9,67 +9,55 @@ function Connect-Catlet {
 
     [Parameter()]
     [string]
-    $Username = "e2e",
+    $Username = 'e2e',
 
     [Parameter()]
     [securestring]
-    $Password = (ConvertTo-SecureString "e2e" -AsPlainText -Force),
+    $Password = (ConvertTo-SecureString 'e2e' -AsPlainText -Force),
 
     [Parameter()]
     [switch]
     $WaitForCloudInit
   )
-  
+  $PSNativeCommandUseErrorActionPreference = $true
+  $ErrorActionPreference = 'Stop'
+
   $null = Start-Catlet -Id $CatletId -Force
   $catletIp = Get-CatletIp -Id $CatletId
-  
-  $timeout = (Get-Date).AddMinutes(10)
-  $sshSession = Connect-Ssh -ComputerName $catletIp[0].IpAddress -Username $Username -Password $Password -Timeout $timeout
 
-  if (-not $WaitForCloudInit) {
-    return $sshSession
-  }
-  
-  # Wait for cloud-init to finish. This is necessary as the SSH connection might already
-  # succeed while cloud-init is still running. Additionally, this also ensures that
-  # cloud-init did not fail.
-  while ($true) {
-    $result = Invoke-SSHCommand -Command "cloud-init status" -SSHSession $sshSession
-    if (($result.Output -inotlike '*not started*') -and ($result.Output -inotlike '*running*')) {
-      if (($result.Output -ilike '*degraded*') -or ($result.Output -ilike '*error*')) {
-        throw "cloud-init reported an error: $($result.Output)"
-      }
-      return $sshSession
-    }
-    if ((Get-Date) -gt $timeout) {
-      throw 'cloud-init did not finish within the timeout'
-    }
-    Start-Sleep -Seconds 5
-  }
+  Connect-CatletIp -IpAddress $catletIp[0].IpAddress -Username $Username -Password $Password -WaitForCloudInit:$WaitForCloudInit
 }
 
-function Connect-Ssh {
+function Connect-CatletIp {
   param(
     [Parameter(Mandatory = $true)]
     [string]
-    $ComputerName,
+    $IpAddress,
 
     [Parameter()]
     [string]
-    $Username = "e2e",
+    $Username = 'e2e',
 
     [Parameter()]
     [securestring]
-    $Password = (ConvertTo-SecureString "e2e" -AsPlainText -Force),
+    $Password = (ConvertTo-SecureString 'e2e' -AsPlainText -Force),
 
     [Parameter()]
-    [datetime]
-    $Timeout = (Get-Date).AddMinutes(10)
+    [timespan]
+    $Timeout = (New-TimeSpan -Minutes 10),
+
+    [Parameter()]
+    [switch]
+    $WaitForCloudInit
   )
+  $PSNativeCommandUseErrorActionPreference = $true
+  $ErrorActionPreference = 'Stop'
   
+  $cutOff = (Get-Date).Add($Timeout)
+
   # Remove the existing known host entry to avoid host key verification
   # errors. We expect the host key to change as we just created a new catlet.
-  $null = Remove-SSHTrustedHost -HostName $ComputerName
+  $null = Remove-SSHTrustedHost -HostName $IpAddress
 
   $credentials = [PSCredential]::New($Username, $Password)
   $sshSession = $null
@@ -79,13 +67,34 @@ function Connect-Ssh {
   # attempt can either timeout or immediately fail.
   while (-not $sshSession) {
     try {
-      $sshSession = New-SSHSession -ComputerName $ComputerName -Credential $credentials -AcceptKey
+      $sshSession = New-SSHSession -ComputerName $IpAddress -Credential $credentials -AcceptKey
     } catch {
-      if ((Get-Date) -gt $Timeout) {
+      if ((Get-Date) -gt $cutOff) {
         throw 'Failed to establish an SSH session within the timeout'
       }
       Start-Sleep -Seconds 5
     }
+  }
+
+  if (-not $WaitForCloudInit) {
+    return $sshSession
+  }
+  
+  # Wait for cloud-init to finish. This is necessary as the SSH connection might already
+  # succeed while cloud-init is still running. Additionally, this also ensures that
+  # cloud-init did not fail.
+  while ($true) {
+    $result = Invoke-SSHCommand -Command 'cloud-init status' -SSHSession $sshSession
+    if (($result.Output -inotlike '*not started*') -and ($result.Output -inotlike '*running*')) {
+      if (($result.Output -ilike '*degraded*') -or ($result.Output -ilike '*error*')) {
+        throw "cloud-init reported an error: $($result.Output)"
+      }
+      return $sshSession
+    }
+    if ((Get-Date) -gt $cutOff) {
+      throw 'cloud-init did not finish within the timeout'
+    }
+    Start-Sleep -Seconds 5
   }
 
   return $sshSession
