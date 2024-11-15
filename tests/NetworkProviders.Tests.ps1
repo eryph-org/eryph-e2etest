@@ -19,9 +19,9 @@ Describe "VirtualNetworks" {
     
     $providersConfigBackup = eryph-zero.exe networks get
     
-    # Keep the IP range of the default provider IP pool the same.
+    # Keep the default IP range of the default nat-overlay provider.
     # This way, developers can run the tests locally without running
-    # issues with provider IPs which are in use.
+    # into issues with provider IPs which are in use.
     $providersConfig = @"
 network_providers:
 - name: default
@@ -59,16 +59,6 @@ network_providers:
 version: 1.0
 project: default
 networks:
-# - name: default
-#   provider: default
-#   address: 10.0.100.0/28
-#   subnets:
-#   - name: default
-#     ip_pools:
-#     - name: default
-#       first_ip: 10.0.100.8
-#       last_ip: 10.0.100.15
-#       next_ip: 10.0.100.12
 - name: second
   provider:
     name: default
@@ -88,13 +78,12 @@ networks:
       Set-VNetwork -ProjectName $project.Name -Config $projectNetworksConfig -Force
     }
 
-    It "Connects catlet to multiple virtual networks" {
+    It "Connects catlet to customized network provider" {
       $catletConfig = @"
 name: $catletName
 project: $($project.Name)
 parent: dbosoft/e2etests-os/base
 networks:
-# - name: default
 - name: second
   subnet_v4:
     name: second-subnet
@@ -102,25 +91,18 @@ networks:
 "@
         
       $catlet = New-Catlet -Config $catletConfig
-      Start-Catlet -Id $catlet.Id -Force
-      
-      $catletIps = Get-CatletIp -Id $catlet.Id
-      # $catletIps | Should -HaveCount 2
-      # $catletIps | Assert-Any { [System.Net.IPNetwork]::New("10.249.248.0", 22).Contains($_.IpAddress) }
-      # $catletIps | Assert-Any { [System.Net.IPNetwork]::New("10.249.254.0", 24).Contains($_.IpAddress) }
 
-      $firstSshSession = Connect-CatletIp -IpAddress $catletIps[0].IpAddress -WaitForCloudInit
+      $firstSshSession = Connect-Catlet -CatletId $catlet.Id -WaitForCloudInit
       $firstSshResponse = Invoke-SSHCommand -Command 'hostname' -SSHSession $firstSshSession
       $firstSshResponse.Output | Should -Be $catletName
 
-      # $secondSshSession = Connect-CatletIp -IpAddress  $catletIps[0].IpAddress -WaitForCloudInit
-      # $secondSshResponse = Invoke-SSHCommand -Command 'hostname' -SSHSession $secondSshSession
-      # $secondSshResponse.Output | Should -Be $catletName
-
-      $catletIps = Get-CatletIp -Id $catlet.Id -Internal
-      # $catletIps | Should -HaveCount 2
-      # $catletIps | Assert-Any { $_.IpAddress -eq '10.0.100.12' }
-      $catletIps | Assert-Any { $_.IpAddress -eq '10.0.101.12' } 
+      $catletIps = Get-CatletIp -Id $catlet.Id
+      $catletIps | Should -HaveCount 1
+      $catletIps[0].IpAddress | Should -BeLike '10.249.254.*'
+      
+      $internalCatletIps = Get-CatletIp -Id $catlet.Id -Internal
+      $internalCatletIps | Should -HaveCount 1
+      $internalCatletIps[0].IpAddress | Should -Be '10.0.101.12'
     }
   
     It "Connects catlet to flat network after the catlet has been started" {
