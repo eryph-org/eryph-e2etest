@@ -40,6 +40,26 @@ network_providers:
       first_ip: 10.249.254.10
       next_ip: 10.249.254.10
       last_ip: 10.249.254.241
+  # - name: second-provider-subnet
+  #   network: 10.250.0.0/24
+  #   gateway: 10.250.0.1
+  #   ip_pools:
+  #   - name: default
+  #     first_ip: 10.250.0.10
+  #     next_ip: 10.250.0.10
+  #     last_ip: 10.250.0.240
+- name: second-nat-provider
+  type: nat_overlay
+  bridge_name: br-second-nat
+  subnets: 
+  - name: default
+    network: 10.251.0.0/24
+    gateway: 10.251.0.1
+    ip_pools:
+    - name: default
+      first_ip: 10.251.0.10
+      next_ip: 10.251.0.10
+      last_ip: 10.251.0.240
 - name: test-flat
   type: flat
   switch_name: $flatSwitchName
@@ -51,6 +71,92 @@ network_providers:
   BeforeEach {
     $project = New-TestProject
     $catletName = New-CatletName
+  }
+
+  # TODO Validate output of Get-VNetwork
+
+  Describe "Project with multiple networks using different overlay providers" {
+    BeforeEach {
+      $projectNetworksConfig = @'
+version: 1.0
+project: default
+networks:
+- name: default
+  provider:
+    name: default
+    subnet: default
+    ip_pool: default
+  address: 10.0.100.0/28
+  subnets:
+  - name: default
+    ip_pools:
+    - name: default
+      first_ip: 10.0.100.8
+      last_ip: 10.0.100.15
+      next_ip: 10.0.100.12
+- name: second
+  provider:
+    name: second-nat-provider
+    subnet: default
+    ip_pool: default
+  address: 10.0.101.0/28
+  subnets:
+  - name: second-subnet
+    ip_pools:
+    - name: second-pool
+      first_ip: 10.0.101.8
+      last_ip: 10.0.101.15
+      next_ip: 10.0.101.12
+- name: test-flat-network
+  provider: test-flat
+'@
+      Set-VNetwork -ProjectName $project.Name -Config $projectNetworksConfig -Force
+    }
+
+    It "Connects two catlets to each other and the outside world" {
+      $catletConfig = @"
+parent: dbosoft/e2etests-os/base
+networks:
+- name: default
+- name: second
+  subnet_v4:
+    name: second-subnet
+    ip_pool: second-pool
+"@
+
+      # !BROKEN! This test fails as the catlet is not reachable from the host. Catlets can reach each other and the internet.
+
+      $firstCatlet = New-Catlet -Config $catletConfig -Name "$($catletName)-1" -ProjectName $project.Name
+      $secondCatlet = New-Catlet -Config $catletConfig -Name "$($catletName)-2" -ProjectName $project.Name
+
+      Start-Catlet -Id $firstCatlet.Id -Force
+      Start-Catlet -Id $secondCatlet.Id -Force
+
+      $firstCatletIps = Get-CatletIp -Id $firstCatlet.Id
+      $firstCatletIps | Should -HaveCount 2
+
+      $secondCatletIps = Get-CatletIp -Id $secondCatlet.Id -Internal
+      $secondCatletIps | Should -HaveCount 2
+
+      $sshSession = Connect-CatletIp -IpAddress $firstCatletIps[0].IpAddress -WaitForCloudInit -Timeout (New-TimeSpan -Minutes 2)
+      $sshResponse = Invoke-SSHCommand -Command 'hostname' -SSHSession $sshSession
+      $sshResponse.Output | Should -Be "$($catletName)-1"
+      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[0].IpAddress)" -SSHSession $sshSession
+      $sshResponse.ExitStatus  | Should -Be 0
+      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[1].IpAddress)" -SSHSession $sshSession
+      $sshResponse.ExitStatus  | Should -Be 0
+
+      Remove-SSHSession -SSHSession $sshSession
+
+      $sshSession = Connect-CatletIp -IpAddress $firstCatletIps[1].IpAddress -WaitForCloudInit -Timeout (New-TimeSpan -Minutes 2)
+      $sshResponse = Invoke-SSHCommand -Command 'hostname' -SSHSession $sshSession
+      $sshResponse.Output | Should -Be "$($catletName)-2"
+      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[0].IpAddress)" -SSHSession $sshSession
+      $sshResponse.ExitStatus  | Should -Be 0
+      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[1].IpAddress)" -SSHSession $sshSession
+      $sshResponse.ExitStatus  | Should -Be 0
+    }
+  
   }
 
   Describe "Project with multiple networks using different provider pools" {
