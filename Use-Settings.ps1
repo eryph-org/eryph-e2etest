@@ -22,6 +22,18 @@ if ($env:E2E_ERYPH_PACKER_PATH) {
   $env:Path = "$($env:E2E_ERYPH_PACKER_PATH);$($env:Path)"
 }
 
+if ($EryphSettings.ClientRuntimeModulePath) {
+  $env:PSModulePath = "$($EryphSettings.ClientRuntimeModulePath);$($env:PSModulePath)"
+}
+
+if ($env:E2E_CLIENT_RUNTIME_MODULE_PATH) {
+  $env:PSModulePath = "$($env:E2E_CLIENT_RUNTIME_MODULE_PATH);$($env:PSModulePath)"
+}
+
+if (-not (Get-Module -Name "Eryph.ClientRuntime.Configuration")) {
+  Import-Module Eryph.ClientRuntime.Configuration 
+}
+
 if ($EryphSettings.ComputeClientModulePath) {
   $env:PSModulePath = "$($EryphSettings.ComputeClientModulePath);$($env:PSModulePath)"
 }
@@ -30,14 +42,7 @@ if ($env:E2E_COMPUTE_CLIENT_MODULE_PATH) {
   $env:PSModulePath = "$($env:E2E_COMPUTE_CLIENT_MODULE_PATH);$($env:PSModulePath)"
 }
 
-if ($EryphSettings.ComputeClientPath) {
-  if (-not (Get-module -Name "Eryph.ComputeClient.Commands")) {
-    Remove-Module Eryph.ComputeClient -Force -ErrorAction SilentlyContinue
-    Remove-Module (Join-Path $EryphSettings.ComputeClientPath "Eryph.ComputeClient.Commands.dll") -Force -ErrorAction SilentlyContinue
-    Import-Module (Join-Path $EryphSettings.ComputeClientPath "Eryph.ComputeClient.Commands.dll") -Force
-  }
-}
-elseif (-not (Get-Module -Name "Eryph.ComputeClient")) {
+if (-not (Get-Module -Name "Eryph.ComputeClient")) {
   Import-Module Eryph.ComputeClient 
 }
 
@@ -49,13 +54,6 @@ if ($env:E2E_IDENTITY_CLIENT_MODULE_PATH) {
   $env:PSModulePath = "$($env:E2E_IDENTITY_CLIENT_MODULE_PATH);$($env:PSModulePath)"
 }
 
-if ($EryphSettings.IdentityClientPath) {
-  if (-not (Get-module -Name "Eryph.IdentityClient.Commands")) {
-    Remove-Module Eryph.IdentityClient -Force -ErrorAction SilentlyContinue
-    Remove-Module (Join-Path $EryphSettings.IdentityClientPath "Eryph.IdentityClient.Commands.dll") -Force -ErrorAction SilentlyContinue
-    Import-Module (Join-Path $EryphSettings.IdentityClientPath "Eryph.IdentityClient.Commands.dll") -Force
-  }
-}
-elseif (-not (Get-Module -Name "Eryph.IdentityClient")) {
+if (-not (Get-Module -Name "Eryph.IdentityClient")) {
   Import-Module Eryph.IdentityClient
 }
