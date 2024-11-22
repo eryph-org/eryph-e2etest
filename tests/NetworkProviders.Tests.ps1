@@ -19,9 +19,14 @@ Describe "NetworkProviders" {
     
     $providersConfigBackup = eryph-zero.exe networks get
     
-    # Keep the default IP range of the default nat-overlay provider.
-    # This way, developers can run the tests locally without running
-    # into issues with provider IPs which are in use.
+    # The provider config is subject to certain limitations:
+    # - The IP range of the default provider should match the range
+    #   in the default configuration. Otherwise, developers might run
+    #   into issues when running the tests locally. Eryph would block
+    #   changes to the IP range if any IPs which are in use are removed
+    #   from the range.
+    # - NAT overlay providers only support a single subnet which must
+    #   be named 'default'.
     $providersConfig = @"
 network_providers:
 - name: default
@@ -40,26 +45,18 @@ network_providers:
       first_ip: 10.249.254.10
       next_ip: 10.249.254.10
       last_ip: 10.249.254.241
-  # - name: second-provider-subnet
-  #   network: 10.250.0.0/24
-  #   gateway: 10.250.0.1
-  #   ip_pools:
-  #   - name: default
-  #     first_ip: 10.250.0.10
-  #     next_ip: 10.250.0.10
-  #     last_ip: 10.250.0.240
 - name: second-nat-provider
   type: nat_overlay
   bridge_name: br-second-nat
   subnets: 
   - name: default
-    network: 10.251.0.0/24
-    gateway: 10.251.0.1
+    network: 10.250.0.0/24
+    gateway: 10.250.0.1
     ip_pools:
     - name: default
-      first_ip: 10.251.0.10
-      next_ip: 10.251.0.10
-      last_ip: 10.251.0.240
+      first_ip: 10.250.0.10
+      next_ip: 10.250.0.10
+      last_ip: 10.250.0.240
 - name: test-flat
   type: flat
   switch_name: $flatSwitchName
@@ -72,8 +69,6 @@ network_providers:
     $project = New-TestProject
     $catletName = New-CatletName
   }
-
-  # TODO Validate output of Get-VNetwork
 
   Describe "Project with multiple networks using different overlay providers" {
     BeforeEach {
@@ -352,6 +347,13 @@ networks:
       Set-VNetwork -ProjectName $project.Name -Config $projectNetworksConfig -Force
     }
 
+    It "Returns the correct network configuration" {
+      $networks = Get-VNetwork -ProjectName $project.Name
+      $networks | Should -HaveCount 2
+      $networks | Should -Contain 'second'
+      $networks | Should -Contain 'test-flat-network'
+    }
+
     It "Connects catlet to customized network provider" {
       $catletConfig = @"
 name: $catletName
@@ -436,7 +438,6 @@ networks:
       $catletIps | Should -HaveCount 1
       $catletIps[0].IpAddress | Should -BeLike '10.249.254.*'
 
-      
       $internalCatletIps = Get-CatletIp -Id $catlet.Id -Internal
       $internalCatletIps | Assert-Any { $_.IpAddress -eq '10.0.101.12' }
       # Currently, the inventory does not update the reported IP addresses
