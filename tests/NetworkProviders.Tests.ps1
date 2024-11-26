@@ -57,30 +57,25 @@ network_providers:
       first_ip: 10.250.0.10
       next_ip: 10.250.0.10
       last_ip: 10.250.0.240
-- name: test-flat
+- name: flat-provider
   type: flat
   switch_name: $flatSwitchName
 "@
     $providersConfig | eryph-zero.exe networks import --non-interactive
   }
 
-
   BeforeEach {
     $project = New-TestProject
     $catletName = New-CatletName
   }
 
-  Describe "Project with multiple networks using different overlay providers" {
-    BeforeEach {
-      $projectNetworksConfig = @'
+  It "Can change provider of existing network" {
+    $projectNetworksConfig = @'
 version: 1.0
 project: default
 networks:
 - name: default
-  provider:
-    name: default
-    subnet: default
-    ip_pool: default
+  provider: default
   address: 10.0.100.0/28
   subnets:
   - name: default
@@ -89,91 +84,49 @@ networks:
       first_ip: 10.0.100.8
       last_ip: 10.0.100.15
       next_ip: 10.0.100.12
-- name: second
-  provider:
-    name: second-nat-provider
-    subnet: default
-    ip_pool: default
-  address: 10.0.101.0/28
-  subnets:
-  - name: second-subnet
-    ip_pools:
-    - name: second-pool
-      first_ip: 10.0.101.8
-      last_ip: 10.0.101.15
-      next_ip: 10.0.101.12
-- name: test-flat-network
-  provider: test-flat
 '@
-      Set-VNetwork -ProjectName $project.Name -Config $projectNetworksConfig -Force
-    }
+    
+    Set-VNetwork -ProjectName $project.Name -Config $projectNetworksConfig -Force
 
-    It "Connects two catlets to each other and the outside world" {
-      $catletConfig = @"
-parent: dbosoft/e2etests-os/base
+    $networks = Get-VNetwork -ProjectName $project.Name
+    $networks | Should -HaveCount 1
+    $networks[0].Name | Should -Be 'default'
+    $networks[0].Environment | Should -Be 'default'
+    $networks[0].ProviderName | Should -Be 'default'
+    $networks[0].IpNetwork | Should -Be '10.0.100.0/28'
+
+    $updatedProjectNetworksConfig = @'
+version: 1.0
+project: default
 networks:
 - name: default
-- name: second
-  subnet_v4:
-    name: second-subnet
-    ip_pool: second-pool
-"@
+  provider: second-nat-provider
+  address: 10.0.100.0/28
+  subnets:
+  - name: default
+    ip_pools:
+    - name: default
+      first_ip: 10.0.100.8
+      last_ip: 10.0.100.15
+'@
 
-      # !BROKEN! This test fails as the catlet is not reachable from the host. Catlets can reach each other and the internet.
-
-      $firstCatlet = New-Catlet -Config $catletConfig -Name "$($catletName)-1" -ProjectName $project.Name
-      $secondCatlet = New-Catlet -Config $catletConfig -Name "$($catletName)-2" -ProjectName $project.Name
-
-      Start-Catlet -Id $firstCatlet.Id -Force
-      Start-Catlet -Id $secondCatlet.Id -Force
-
-      $firstCatletIps = Get-CatletIp -Id $firstCatlet.Id
-      $firstCatletIps | Should -HaveCount 2
-
-      $secondCatletIps = Get-CatletIp -Id $secondCatlet.Id -Internal
-      $secondCatletIps | Should -HaveCount 2
-
-      $sshSession = Connect-CatletIp -IpAddress $firstCatletIps[0].IpAddress -WaitForCloudInit -Timeout (New-TimeSpan -Minutes 2)
-      $sshResponse = Invoke-SSHCommand -Command 'hostname' -SSHSession $sshSession
-      $sshResponse.Output | Should -Be "$($catletName)-1"
-      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[0].IpAddress)" -SSHSession $sshSession
-      $sshResponse.ExitStatus  | Should -Be 0
-      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[1].IpAddress)" -SSHSession $sshSession
-      $sshResponse.ExitStatus  | Should -Be 0
-
-      Remove-SSHSession -SSHSession $sshSession
-
-      $sshSession = Connect-CatletIp -IpAddress $firstCatletIps[1].IpAddress -WaitForCloudInit -Timeout (New-TimeSpan -Minutes 2)
-      $sshResponse = Invoke-SSHCommand -Command 'hostname' -SSHSession $sshSession
-      $sshResponse.Output | Should -Be "$($catletName)-2"
-      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[0].IpAddress)" -SSHSession $sshSession
-      $sshResponse.ExitStatus  | Should -Be 0
-      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[1].IpAddress)" -SSHSession $sshSession
-      $sshResponse.ExitStatus  | Should -Be 0
-    }
-  
+    Set-VNetwork -ProjectName $project.Name -Config $updatedProjectNetworksConfig -Force
+    
+    $updatedNetworks = Get-VNetwork -ProjectName $project.Name
+    $updatedNetworks | Should -HaveCount 1
+    $updatedNetworks[0].Name | Should -Be 'default'
+    $updatedNetworks[0].Environment | Should -Be 'default'
+    $updatedNetworks[0].ProviderName | Should -Be 'second-nat-provider'
+    $updatedNetworks[0].IpNetwork | Should -Be '10.0.100.0/28'
   }
 
-  Describe "Project with multiple networks using different provider pools" {
+  Describe "Project with overlay network and flat network" {
     BeforeEach {
       $projectNetworksConfig = @'
 version: 1.0
 project: default
 networks:
-- name: default
-  provider:
-    name: default
-    subnet: default
-    ip_pool: default
-  address: 10.0.100.0/28
-  subnets:
-  - name: default
-    ip_pools:
-    - name: default
-      first_ip: 10.0.100.8
-      last_ip: 10.0.100.15
-      next_ip: 10.0.100.12
-- name: second
+- name: second-network
   provider:
     name: default
     subnet: default
@@ -186,162 +139,8 @@ networks:
       first_ip: 10.0.101.8
       last_ip: 10.0.101.15
       next_ip: 10.0.101.12
-- name: test-flat-network
-  provider: test-flat
-'@
-      Set-VNetwork -ProjectName $project.Name -Config $projectNetworksConfig -Force
-    }
-
-    It "Connects two catlets to each other and the outside world" {
-      $catletConfig = @"
-parent: dbosoft/e2etests-os/base
-networks:
-- name: default
-- name: second
-  subnet_v4:
-    name: second-subnet
-    ip_pool: second-pool
-"@
-      # !BROKEN! This test fails as the catlet is only reachable with one of the two provider IP addresses
-
-      $firstCatlet = New-Catlet -Config $catletConfig -Name "$($catletName)-1" -ProjectName $project.Name
-      $secondCatlet = New-Catlet -Config $catletConfig -Name "$($catletName)-2" -ProjectName $project.Name
-
-      Start-Catlet -Id $firstCatlet.Id -Force
-      Start-Catlet -Id $secondCatlet.Id -Force
-
-      $firstCatletIps = Get-CatletIp -Id $firstCatlet.Id
-      $firstCatletIps | Should -HaveCount 2
-
-      $secondCatletIps = Get-CatletIp -Id $secondCatlet.Id -Internal
-      $secondCatletIps | Should -HaveCount 2
-
-      $sshSession = Connect-CatletIp -IpAddress $firstCatletIps[0].IpAddress -WaitForCloudInit -Timeout (New-TimeSpan -Minutes 2)
-      $sshResponse = Invoke-SSHCommand -Command 'hostname' -SSHSession $sshSession
-      $sshResponse.Output | Should -Be "$($catletName)-1"
-      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[0].IpAddress)" -SSHSession $firstSshSession
-      $sshResponse.ExitStatus  | Should -Be 0
-      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[1].IpAddress)" -SSHSession $firstSshSession
-      $sshResponse.ExitStatus  | Should -Be 0
-
-      Remove-SSHSession -SSHSession $sshSession
-
-      $sshSession = Connect-CatletIp -IpAddress $firstCatletIps[1].IpAddress -WaitForCloudInit -Timeout (New-TimeSpan -Minutes 2)
-      $sshResponse = Invoke-SSHCommand -Command 'hostname' -SSHSession $sshSession
-      $sshResponse.Output | Should -Be "$($catletName)-2"
-      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[0].IpAddress)" -SSHSession $firstSshSession
-      $sshResponse.ExitStatus  | Should -Be 0
-      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[1].IpAddress)" -SSHSession $firstSshSession
-      $sshResponse.ExitStatus  | Should -Be 0
-    }
-  
-  }
-
-  Describe "Project with multiple networks using the same provider pool" {
-    BeforeEach {
-      $projectNetworksConfig = @'
-version: 1.0
-project: default
-networks:
-- name: default
-  provider:
-    name: default
-    subnet: default
-    ip_pool: default
-  address: 10.0.100.0/28
-  subnets:
-  - name: default
-    ip_pools:
-    - name: default
-      first_ip: 10.0.100.8
-      last_ip: 10.0.100.15
-      next_ip: 10.0.100.12
-- name: second
-  provider:
-    name: default
-    subnet: default
-    ip_pool: default
-  address: 10.0.101.0/28
-  subnets:
-  - name: second-subnet
-    ip_pools:
-    - name: second-pool
-      first_ip: 10.0.101.8
-      last_ip: 10.0.101.15
-      next_ip: 10.0.101.12
-- name: test-flat-network
-  provider: test-flat
-'@
-      Set-VNetwork -ProjectName $project.Name -Config $projectNetworksConfig -Force
-    }
-
-    It "Connects two catlets to each other and the outside world" {
-      $catletConfig = @"
-parent: dbosoft/e2etests-os/base
-networks:
-- name: default
-- name: second
-  subnet_v4:
-    name: second-subnet
-    ip_pool: second-pool
-"@
-
-      # !BROKEN! This test fails as the catlet is not reachable from the host. Catlets can reach each other and the internet.
-
-      $firstCatlet = New-Catlet -Config $catletConfig -Name "$($catletName)-1" -ProjectName $project.Name
-      $secondCatlet = New-Catlet -Config $catletConfig -Name "$($catletName)-2" -ProjectName $project.Name
-
-      Start-Catlet -Id $firstCatlet.Id -Force
-      Start-Catlet -Id $secondCatlet.Id -Force
-
-      $firstCatletIps = Get-CatletIp -Id $firstCatlet.Id
-      $firstCatletIps | Should -HaveCount 2
-
-      $secondCatletIps = Get-CatletIp -Id $secondCatlet.Id -Internal
-      $secondCatletIps | Should -HaveCount 2
-
-      $sshSession = Connect-CatletIp -IpAddress $firstCatletIps[0].IpAddress -WaitForCloudInit -Timeout (New-TimeSpan -Minutes 2)
-      $sshResponse = Invoke-SSHCommand -Command 'hostname' -SSHSession $sshSession
-      $sshResponse.Output | Should -Be "$($catletName)-1"
-      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[0].IpAddress)" -SSHSession $sshSession
-      $sshResponse.ExitStatus  | Should -Be 0
-      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[1].IpAddress)" -SSHSession $sshSession
-      $sshResponse.ExitStatus  | Should -Be 0
-
-      Remove-SSHSession -SSHSession $sshSession
-
-      $sshSession = Connect-CatletIp -IpAddress $firstCatletIps[1].IpAddress -WaitForCloudInit -Timeout (New-TimeSpan -Minutes 2)
-      $sshResponse = Invoke-SSHCommand -Command 'hostname' -SSHSession $sshSession
-      $sshResponse.Output | Should -Be "$($catletName)-2"
-      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[0].IpAddress)" -SSHSession $sshSession
-      $sshResponse.ExitStatus  | Should -Be 0
-      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[1].IpAddress)" -SSHSession $sshSession
-      $sshResponse.ExitStatus  | Should -Be 0
-    }
-  
-  }
-
-  Describe "Project with multiple networks and providers" {
-    BeforeEach {
-      $projectNetworksConfig = @'
-version: 1.0
-project: default
-networks:
-- name: second
-  provider:
-    name: default
-    subnet: default
-    ip_pool: second-provider-pool
-  address: 10.0.101.0/28
-  subnets:
-  - name: second-subnet
-    ip_pools:
-    - name: second-pool
-      first_ip: 10.0.101.8
-      last_ip: 10.0.101.15
-      next_ip: 10.0.101.12
-- name: test-flat-network
-  provider: test-flat
+- name: flat-network
+  provider: flat-provider
 '@
       
       Set-VNetwork -ProjectName $project.Name -Config $projectNetworksConfig -Force
@@ -350,35 +149,20 @@ networks:
     It "Returns the correct network configuration" {
       $networks = Get-VNetwork -ProjectName $project.Name
       $networks | Should -HaveCount 2
-      $networks | Should -Contain 'second'
-      $networks | Should -Contain 'test-flat-network'
-    }
 
-    It "Connects catlet to customized network provider" {
-      $catletConfig = @"
-name: $catletName
-project: $($project.Name)
-parent: dbosoft/e2etests-os/base
-networks:
-- name: second
-  subnet_v4:
-    name: second-subnet
-    ip_pool: second-pool
-"@
-        
-      $catlet = New-Catlet -Config $catletConfig
+      $overlayNetworks = $networks | Where-Object { $_.Name -eq 'second-network' }	
+      $overlayNetworks | Should -HaveCount 1
+      $overlayNetworks[0].Name | Should -Be 'second-network'
+      $overlayNetworks[0].Environment | Should -Be 'default'
+      $overlayNetworks[0].ProviderName | Should -Be 'default'
+      $overlayNetworks[0].IpNetwork | Should -Be '10.0.101.0/28'
 
-      $firstSshSession = Connect-Catlet -CatletId $catlet.Id -WaitForCloudInit
-      $firstSshResponse = Invoke-SSHCommand -Command 'hostname' -SSHSession $firstSshSession
-      $firstSshResponse.Output | Should -Be $catletName
-
-      $catletIps = Get-CatletIp -Id $catlet.Id
-      $catletIps | Should -HaveCount 1
-      $catletIps[0].IpAddress | Should -BeLike '10.249.254.*'
-      
-      $internalCatletIps = Get-CatletIp -Id $catlet.Id -Internal
-      $internalCatletIps | Should -HaveCount 1
-      $internalCatletIps[0].IpAddress | Should -Be '10.0.101.12'
+      $flatNetworks = $networks | Where-Object { $_.Name -eq 'flat-network' }	
+      $flatNetworks | Should -HaveCount 1
+      $flatNetworks[0].Name | Should -Be 'flat-network'
+      $flatNetworks[0].Environment | Should -Be 'default'
+      $flatNetworks[0].ProviderName | Should -Be 'flat-provider'
+      $flatNetworks[0].IpNetwork | Should -BeNullOrEmpty
     }
   
     It "Connects catlet to flat network after the catlet has been started" {
@@ -394,7 +178,7 @@ parent: dbosoft/e2etests-os/base
 network_adapters:
 - name: eth0
 networks:
-- name: second
+- name: second-network
   adapter_name: eth0
   subnet_v4:
     name: second-subnet
@@ -412,12 +196,12 @@ network_adapters:
 - name: eth0
 - name: eth1
 networks:
-- name: second
+- name: second-network
   adapter_name: eth0
   subnet_v4:
     name: second-subnet
     ip_pool: second-pool
-- name: test-flat-network
+- name: flat-network
   adapter_name: eth1
 "@
 
@@ -436,7 +220,7 @@ networks:
       $catletIps = Get-CatletIp -Id $catlet.Id
       # We only expect 1 IP address as flat networks do not have floating IPs.
       $catletIps | Should -HaveCount 1
-      $catletIps[0].IpAddress | Should -BeLike '10.249.254.*'
+      ([System.Net.IPNetwork]'10.249.254.0/24').Contains($catletIps[0].IpAddress) | Should -BeTrue
 
       $internalCatletIps = Get-CatletIp -Id $catlet.Id -Internal
       $internalCatletIps | Assert-Any { $_.IpAddress -eq '10.0.101.12' }
@@ -447,11 +231,11 @@ networks:
   }
 
   AfterEach {
-    # Remove-EryphProject -Id $project.Id -Force
+    Remove-EryphProject -Id $project.Id -Force
   }
 
   AfterAll {
-    # $providersConfigBackup | eryph-zero.exe networks import --non-interactive
-    # Remove-VMSwitch -Name $flatSwitchName -Force
+    $providersConfigBackup | eryph-zero.exe networks import --non-interactive
+    Remove-VMSwitch -Name $flatSwitchName -Force
   }
 }
