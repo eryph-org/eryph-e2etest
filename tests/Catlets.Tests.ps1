@@ -245,7 +245,7 @@ fodder:
 - source: gene:dbosoft/starter-food:linux-starter
   variables: 
   - name: password
-    value: "{{ password }}"
+    value: '{{ password }}'
 '@
 
       $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config -Variables @{ password = "myPassword" }
@@ -378,11 +378,11 @@ hostname: second
       $firstSshSession = Connect-Catlet -CatletId $firstCatlet.Id -WaitForCloudInit
       $secondSshSession = Connect-Catlet -CatletId $secondCatlet.Id -WaitForCloudInit
 
-      $firstSshResponse = Invoke-SSHCommand -Command 'ping -c 1 -W 1 second.home.arpa; echo "exit code: $?"' -SSHSession $firstSshSession
-      $firstSshResponse.Output | Assert-Any { $_ -eq 'exit code: 0' }
+      $firstSshResponse = Invoke-SSHCommand -Command 'ping -c 1 -W 1 second.home.arpa' -SSHSession $firstSshSession
+      $firstSshResponse.ExitStatus  | Should -Be 0
 
-      $secondSshResponse = Invoke-SSHCommand -Command 'ping -c 1 -W 1 first.home.arpa; echo "exit code: $?"' -SSHSession $secondSshSession
-      $secondSshResponse.Output | Assert-Any { $_ -eq 'exit code: 0' }
+      $secondSshResponse = Invoke-SSHCommand -Command 'ping -c 1 -W 1 first.home.arpa' -SSHSession $secondSshSession
+      $secondSshResponse.ExitStatus  | Should -Be 0
     }
   }
 

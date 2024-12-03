@@ -9,26 +9,56 @@ function Connect-Catlet {
 
     [Parameter()]
     [string]
-    $Username = "e2e",
+    $Username = 'e2e',
 
     [Parameter()]
     [securestring]
-    $Password = (ConvertTo-SecureString "e2e" -AsPlainText -Force),
+    $Password = (ConvertTo-SecureString 'e2e' -AsPlainText -Force),
 
     [Parameter()]
     [switch]
     $WaitForCloudInit
   )
-  
+  $PSNativeCommandUseErrorActionPreference = $true
+  $ErrorActionPreference = 'Stop'
+
   $null = Start-Catlet -Id $CatletId -Force
   $catletIp = Get-CatletIp -Id $CatletId
+
+  Connect-CatletIp -IpAddress $catletIp[0].IpAddress -Username $Username -Password $Password -WaitForCloudInit:$WaitForCloudInit
+}
+
+function Connect-CatletIp {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]
+    $IpAddress,
+
+    [Parameter()]
+    [string]
+    $Username = 'e2e',
+
+    [Parameter()]
+    [securestring]
+    $Password = (ConvertTo-SecureString 'e2e' -AsPlainText -Force),
+
+    [Parameter()]
+    [timespan]
+    $Timeout = (New-TimeSpan -Minutes 10),
+
+    [Parameter()]
+    [switch]
+    $WaitForCloudInit
+  )
+  $PSNativeCommandUseErrorActionPreference = $true
+  $ErrorActionPreference = 'Stop'
   
+  $cutOff = (Get-Date).Add($Timeout)
+
   # Remove the existing known host entry to avoid host key verification
   # errors. We expect the host key to change as we just created a new catlet.
-  $null = Remove-SSHTrustedHost -HostName $catletIp.IpAddress
+  $null = Remove-SSHTrustedHost -HostName $IpAddress
 
-  $timeout = New-TimeSpan -Minutes 10
-  $start = Get-Date
   $credentials = [PSCredential]::New($Username, $Password)
   $sshSession = $null
 
@@ -37,10 +67,10 @@ function Connect-Catlet {
   # attempt can either timeout or immediately fail.
   while (-not $sshSession) {
     try {
-      $sshSession = New-SSHSession -ComputerName $catletIp.IpAddress -Credential $credentials -AcceptKey
+      $sshSession = New-SSHSession -ComputerName $IpAddress -Credential $credentials -AcceptKey
     } catch {
-      if (((Get-Date) - $start) -gt $timeout) {
-        throw
+      if ((Get-Date) -gt $cutOff) {
+        throw 'Failed to establish an SSH session within the timeout'
       }
       Start-Sleep -Seconds 5
     }
@@ -54,18 +84,26 @@ function Connect-Catlet {
   # succeed while cloud-init is still running. Additionally, this also ensures that
   # cloud-init did not fail.
   while ($true) {
-    $result = Invoke-SSHCommand -Command "cloud-init status" -SSHSession $sshSession
+    $result = Invoke-SSHCommand -Command 'cloud-init status' -SSHSession $sshSession
     if (($result.Output -inotlike '*not started*') -and ($result.Output -inotlike '*running*')) {
       if (($result.Output -ilike '*degraded*') -or ($result.Output -ilike '*error*')) {
         throw "cloud-init reported an error: $($result.Output)"
       }
-      return $sshSession
+      break
     }
-    if (((Get-Date) - $start) -gt $timeout) {
-      throw 'cloud-init did not finish within the timeout'
+    if ((Get-Date) -gt $cutOff) {
+      throw "cloud-init did not finish within the timeout and still reports: $($result.Output)"
     }
     Start-Sleep -Seconds 5
   }
+
+  # Verify that our cloud-init config is valid.
+  $schemaResult = Invoke-SSHCommand -Command "sudo cloud-init schema --system" -SSHSession $sshSession
+  if ($schemaResult.ExitStatus -ne 0) {
+    throw "cloud-init reports that the config is invalid:  $($schemaResult.Output)"
+  }
+
+  return $sshSession
 }
 
 function New-TestProject {
