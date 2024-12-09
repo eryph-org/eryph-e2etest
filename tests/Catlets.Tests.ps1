@@ -384,6 +384,25 @@ hostname: second
       $secondSshResponse = Invoke-SSHCommand -Command 'ping -c 1 -W 1 first.home.arpa' -SSHSession $secondSshSession
       $secondSshResponse.ExitStatus  | Should -Be 0
     }
+
+    It "Gracefully handles manually assigned IP address" {
+      $catletConfig = @'
+parent: dbosoft/e2etests-os/base
+'@
+
+      $catlet = New-Catlet -Name "$catletName" -ProjectName $project.Name -Config $catletConfig
+      $sshSession = Connect-Catlet -CatletId $catlet.Id -WaitForCloudInit
+    
+      $sshResponse = Invoke-SSHCommand -Command 'sudo ip addr add 172.22.42.43/24 dev eth0' -SSHSession $sshSession
+      $sshResponse.ExitStatus  | Should -Be 0
+
+      Wait-Assert {
+        $internalCatletIps = Get-CatletIp -Id $catlet.Id -Internal
+        $internalCatletIps | Should -HaveCount 2
+        $internalCatletIps | Assert-Any { $_.IpAddress -eq '10.0.0.100' }
+        $internalCatletIps | Assert-Any { $_.IpAddress -eq '172.22.42.43' }
+      }
+    }
   }
 
   AfterEach {
