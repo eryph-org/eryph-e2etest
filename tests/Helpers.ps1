@@ -106,6 +106,39 @@ function Connect-CatletIp {
   return $sshSession
 }
 
+function Wait-Assert {
+  param(
+    [Parameter(Mandatory = $true, Position = 0)]
+    [scriptblock]
+    $Assertion,
+
+    [Parameter()]
+    [timespan]
+    $Timeout = (New-TimeSpan -Minutes 1),
+
+    [Parameter()]
+    [timespan]
+    $Interval = (New-TimeSpan -Seconds 5)
+  )
+
+  $PSNativeCommandUseErrorActionPreference = $true
+  $ErrorActionPreference = 'Stop'
+
+  $cutOff = (Get-Date).Add($Timeout)
+
+  while ($true) {
+    try {
+      & $Assertion
+      return
+    } catch {
+      if ((Get-Date) -gt $cutOff) {
+        throw
+      }
+    }
+    Start-Sleep -Seconds $Interval.TotalSeconds
+  }
+}
+
 function New-TestProject {
   $projectName = "test-$(Get-Date -Format 'yyyyMMddHHmmss')"
   New-EryphProject -Name $projectName
