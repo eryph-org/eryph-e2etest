@@ -1,4 +1,246 @@
+# This pipelines executes the end-to-end tests for eryph.
+# The pipeline creates a catlet with a temporary Azure DevOps
+# agent. The tests are then executed inside the temporary catlet
+# which is only used for a single test run.
+
 trigger: none
-pr: none
-steps:
-- checkout: none
+
+resources:
+  pipelines:
+   - pipeline: eryph
+     source: eryph-org.eryph
+   - pipeline: packer
+     source: eryph-org.dotnet-genepoolclient
+   - pipeline: client-runtime
+     source: eryph-org.dotnet-clientruntime
+   - pipeline: compute-client
+     source: eryph-org.dotnet-computeclient
+   - pipeline: identity-client
+     source: eryph-org.dotnet-identityclient
+
+jobs:
+- job: SpinUp
+  pool:
+    name: eryph
+    demands:
+    - Agent.Name -equals vsts-agent
+  steps:
+  - task: PowerShell@2
+    inputs:
+      targetType: 'inline'
+      script: |
+        $config = Get-Content -Raw .\runner.yaml
+        $variables = @{
+          tenantId = "$(E2E_SP_TENANT_ID)"
+          clientId = "$(E2E_SP_CLIENT_ID)"
+          clientSecret = $env:E2E_SP_CLIENT_SECRET
+          devopsUrls = "$(E2E_DEVOPS_URL)"
+          agentPassword = $env:E2E_AGENT_PASSWORD
+          poolName = "eryph"
+          agentName = "e2e-$(Build.BuildId)"
+        }
+        $catlet = New-Catlet -Name "e2e-$(Build.BuildId)" -Config $config -Variables $variables
+        Start-Catlet -Id $catlet.Id -Force
+    env:
+      E2E_SP_CLIENT_SECRET: $(E2E_SP_CLIENT_SECRET)
+      E2E_AGENT_PASSWORD: $(E2E_AGENT_PASSWORD)
+
+  - task: PowerShell@2
+    timeoutInMinutes: 30
+    inputs:
+      targetType: 'inline'
+      script: |
+        az login --service-principal `
+          --tenant '$(E2E_SP_TENANT_ID)' `
+          --username '$(E2E_SP_CLIENT_ID)' `
+          --password $env:E2E_SP_CLIENT_SECRET `
+          --allow-no-subscription
+        
+        while($True) {
+          Write-Output "Waiting for agent..."
+          Start-Sleep -Seconds 15
+          
+          $agents = az pipelines agent list `
+            --organization '$(E2E_DEVOPS_URL)' `
+            --pool-id 11 `
+            --query "[].[name]" `
+            --output tsv
+
+          if ($agents -Contains "e2e-$(Build.BuildId)"){
+            return
+          }
+        }
+    env:
+      AZURE_EXTENSION_USE_DYNAMIC_INSTALL: 'yes_without_prompt'
+      AZURE_EXTENSION_RUN_AFTER_DYNAMIC_INSTALL: True
+      E2E_SP_CLIENT_SECRET: $(E2E_SP_CLIENT_SECRET)
+  
+  - task: PowerShell@2
+    condition: true
+    inputs:
+      targetType: 'inline'
+      script: |
+        az logout
+
+- job: Test
+  timeoutInMinutes: 120
+  dependsOn:
+  - SpinUp
+  pool:
+    name: eryph
+    demands:
+    - Agent.Name -equals e2e-$(Build.BuildId)
+  steps:
+  - download: eryph
+    artifact: zero
+    patterns: '**/*.zip'
+  - download: packer
+    artifact: packer
+    patterns: '**/*.zip'
+  - download: client-runtime
+    artifact: cmdlet
+    patterns: '**/*'
+  - download: compute-client
+    artifact: cmdlet
+    patterns: '**/*'
+  - download: identity-client
+    artifact: cmdlet
+    patterns: '**/*'
+
+  - task: ExtractFiles@1
+    inputs: 
+      archiveFilePatterns: $(Pipeline.Workspace)/eryph/zero/*.zip
+      destinationFolder: $(Pipeline.Workspace)/eryph/zero/eryph-zero
+  - task: ExtractFiles@1
+    inputs: 
+      archiveFilePatterns: $(Pipeline.Workspace)/eryph/zero/eryph-zero/ovspackage.zip
+      destinationFolder: $(Pipeline.Workspace)/ovs
+  - task: ExtractFiles@1
+    inputs: 
+      archiveFilePatterns: $(Pipeline.Workspace)/packer/packer/*.zip
+      destinationFolder: $(Pipeline.Workspace)/packer/packer/packer
+  - task: PowerShell@2
+    inputs:
+      pwsh: true 
+      targetType: 'inline'
+      script: |
+        [Environment]::SetEnvironmentVariable("ERYPH_OVN__LOGGING__FILE__LEVEL", "Debug", "Machine")
+        [Environment]::SetEnvironmentVariable("ERYPH_SERILOG__MINIMUMLEVEL__DEFAULT", "Verbose", "Machine")
+        [Environment]::SetEnvironmentVariable("ERYPH_SERILOG__MINIMUMLEVEL__OVERRIDE__DBOSOFT.OVN", "Information", "Machine")
+  - task: PowerShell@2
+    inputs:
+      pwsh: true 
+      targetType: 'inline'
+      script: |
+        if (Test-Path "$(Pipeline.Workspace)/ovs/driver/package.cer") {
+          Import-Certificate -FilePath "$(Pipeline.Workspace)/ovs/driver/package.cer" -CertStoreLocation 'Cert:\LocalMachine\Root'
+          Import-Certificate -FilePath "$(Pipeline.Workspace)/ovs/driver/package.cer" -CertStoreLocation 'Cert:\LocalMachine\TrustedPublisher'
+        }
+        & "$(Pipeline.Workspace)/eryph/zero/eryph-zero/bin/eryph-zero.exe" install
+  - task: PowerShell@2
+    inputs:
+      pwsh: true 
+      targetType: 'inline'
+      script: |
+        .\Run-Tests.ps1
+    env:
+      E2E_ERYPH_PACKER_PATH: $(Pipeline.Workspace)/packer/packer/packer/bin
+      E2E_CLIENT_RUNTIME_MODULE_PATH: $(Pipeline.Workspace)/client-runtime/cmdlet
+      E2E_COMPUTE_CLIENT_MODULE_PATH: $(Pipeline.Workspace)/compute-client/cmdlet
+      E2E_IDENTITY_CLIENT_MODULE_PATH: $(Pipeline.Workspace)/identity-client/cmdlet
+
+  # Copy the logs as the data directory with the logs is removed during the uninstallation.
+  # Also, the archive or publish task can fail when the log files are in use by another process,
+  # e.g. because eryph has not been properly uninstalled.
+  - task: PowerShell@2
+    condition: true
+    inputs:
+      pwsh: true 
+      targetType: 'inline'
+      script: |
+        New-Item -ItemType Directory "$(Pipeline.Workspace)/logs"
+        if (Test-Path "C:\ProgramData\eryph\zero\logs\*") {
+          Copy-Item C:\ProgramData\eryph\zero\logs\* "$(Pipeline.Workspace)/logs" -Recurse
+        }
+        if (Test-Path "C:\ProgramData\openvswitch\var\log\*") {
+          Copy-Item C:\ProgramData\openvswitch\var\log\* "$(Pipeline.Workspace)/logs" -Recurse
+        }
+
+  - task: PowerShell@2
+    inputs:
+      pwsh: true 
+      targetType: 'inline'
+      script: |
+        .\Test-Uninstaller.ps1
+
+  - task: ArchiveFiles@2
+    condition: true
+    inputs:
+      rootFolderOrFile: $(Pipeline.Workspace)/logs
+      includeRootFolder: false
+      archiveFile: $(Pipeline.Workspace)/eryph-e2etests-logs-$(Build.BuildId).zip
+
+  - publish: $(Pipeline.Workspace)/eryph-e2etests-logs-$(Build.BuildId).zip
+    condition: true
+    artifact: eryph-zero-logs
+
+- job: SpinDown
+  dependsOn:
+  - SpinUp
+  - Test
+  condition: true
+  pool:
+    name: eryph
+    demands:
+    - Agent.Name -equals vsts-agent
+  steps:
+  - checkout: none
+  - task: PowerShell@2
+    inputs:
+      targetType: 'inline'
+      script: |
+        Get-Catlet | Stop-Catlet -Force
+        Get-Catlet | Remove-Catlet -Force
+  - task: PowerShell@2
+    timeoutInMinutes: 15
+    inputs:
+      targetType: 'inline'
+      script: |
+        az login --service-principal `
+          --tenant '$(E2E_SP_TENANT_ID)' `
+          --username '$(E2E_SP_CLIENT_ID)' `
+          --password $env:E2E_SP_CLIENT_SECRET `
+          --allow-no-subscription
+        
+        $agentId = az pipelines agent list `
+          --organization '$(E2E_DEVOPS_URL)' `
+          --pool-id 11 `
+          --query "[?name=='e2e-$(Build.BuildId)'].[id]" `
+          --output tsv
+        
+        if (-not $agentId) {
+          throw "Could not find ID for agent e2e-$(Build.BuildId)"
+        }
+        
+        Write-Output "Removing agent $agentId..."
+
+        # Get an access token for Azure DevOps
+        $accessToken = az account get-access-token `
+          --resource 499b84ac-1321-427f-aa17-267ca6975798 `
+          --query "accessToken" `
+          --output tsv
+
+        Invoke-RestMethod `
+          -Uri "$(E2E_DEVOPS_URL)/_apis/distributedtask/pools/11/agents/$($agentId)?api-version=7.0" `
+          -Method Delete `
+          -Headers @{ Authorization = "Bearer $accessToken" }
+    env:
+      AZURE_EXTENSION_USE_DYNAMIC_INSTALL: 'yes_without_prompt'
+      AZURE_EXTENSION_RUN_AFTER_DYNAMIC_INSTALL: True
+      E2E_SP_CLIENT_SECRET: $(E2E_SP_CLIENT_SECRET)
+  - task: PowerShell@2
+    condition: true
+    inputs:
+      targetType: 'inline'
+      script: |
+        az logout
