@@ -83,7 +83,7 @@ capabilities:
       $vm = Get-VM -Name $catletName
 
       $vm.DynamicMemoryEnabled | Should -BeFalse
-      $vm.MemoryStartup | Should -BeExactly 1024GB
+      $vm.MemoryStartup | Should -BeExactly 1024MB
     }
 
     It "Creates catlet when only the parent is provided" {
