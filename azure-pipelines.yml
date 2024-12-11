@@ -156,6 +156,9 @@ jobs:
         [Environment]::SetEnvironmentVariable("ERYPH_SERILOG__MINIMUMLEVEL__DEFAULT", "Verbose", "Machine")
         [Environment]::SetEnvironmentVariable("ERYPH_SERILOG__MINIMUMLEVEL__OVERRIDE__DBOSOFT.OVN", "Information", "Machine")
 
+  # This task sets an environment variable when the installation was successful.
+  # We later check that variable to decide whether to uninstall eryph-zero.
+  # This way we can test the uninstallation even when the actual tests fail.
   - task: PowerShell@2
     name: InstallEryphZero
     displayName: Install eryph-zero
@@ -211,7 +214,6 @@ jobs:
       pwsh: true 
       targetType: 'inline'
       script: |
-        Write-Output '$(variables.InstallSuccessful)'
         .\Test-Uninstaller.ps1
 
   - task: ArchiveFiles@2
