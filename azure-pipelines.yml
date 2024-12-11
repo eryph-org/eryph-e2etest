@@ -167,7 +167,8 @@ jobs:
           Import-Certificate -FilePath "$(Pipeline.Workspace)/ovs/driver/package.cer" -CertStoreLocation 'Cert:\LocalMachine\Root'
           Import-Certificate -FilePath "$(Pipeline.Workspace)/ovs/driver/package.cer" -CertStoreLocation 'Cert:\LocalMachine\TrustedPublisher'
         }
-        & "$(Pipeline.Workspace)/eryph/zero/eryph-zero/bin/eryph-zero.exe" install
+        & "$(Pipeline.Workspace)/eryph/zero/eryph-zero/bin/eryph-zero.exe" install 
+        Write-Output '##vso[task.setvariable variable=InstallSuccessful]true'
 
   - task: PowerShell@2
     name: RunTests
@@ -205,14 +206,12 @@ jobs:
   - task: PowerShell@2
     name: UninstallEryphZero
     displayName: Uninstall eryph-zero
-    condition: and(succeededOrFailed(), eq(InstallEryphZero.status, 'succeeded'))
+    condition: and(succeededOrFailed(), eq(variables.InstallSuccessful, 'true'))
     inputs:
       pwsh: true 
       targetType: 'inline'
       script: |
-        Write-Output '$(InstallEryphZero.status)'
-        Write-Output '$(InstallEryphZero.result)'
-        Write-Output '$(InstallEryphZero)'
+        Write-Output '$(variables.InstallSuccessful)'
         .\Test-Uninstaller.ps1
 
   - task: ArchiveFiles@2
