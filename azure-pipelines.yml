@@ -205,11 +205,14 @@ jobs:
   - task: PowerShell@2
     name: UninstallEryphZero
     displayName: Uninstall eryph-zero
-    condition: and(succeededOrFailed(), eq(variables['task.InstallEryphZero.status'], 'succeeded'))
+    condition: and(succeededOrFailed(), eq(InstallEryphZero.status, 'succeeded'))
     inputs:
       pwsh: true 
       targetType: 'inline'
       script: |
+        Write-Output '$(InstallEryphZero.status)'
+        Write-Output '$(InstallEryphZero.result)'
+        Write-Output '$(InstallEryphZero)'
         .\Test-Uninstaller.ps1
 
   - task: ArchiveFiles@2
