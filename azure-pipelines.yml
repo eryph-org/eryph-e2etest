@@ -4,6 +4,7 @@
 # which is only used for a single test run.
 
 trigger: none
+pr: none
 
 resources:
   pipelines:
