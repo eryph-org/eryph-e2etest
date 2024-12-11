@@ -356,6 +356,44 @@ fodder:
       $vm = Get-VM -Name $catletName
       $vm.MemoryStartup | Should -BeExactly (2048 * 1024 * 1024)
     }
+
+    It "Removes VM hardware which has been removed from the config" {
+      $config = @"
+name: $catletName
+project: $($project.Name)
+parent: dbosoft/e2etests-os/base
+drives:
+- name: sda
+- name: sdb
+  size: 50
+network_adapters:
+- name: eth0
+- name: eth1
+"@
+      $catlet = New-Catlet -Config $config
+
+      $catlet.Drives | Should -HaveCount 2
+      $catlet.NetworkAdapters | Should -HaveCount 2
+
+      $updateConfig = @"
+name: $catletName
+project: $($project.Name)
+parent: dbosoft/e2etests-os/base
+drives:
+- name: sda
+network_adapters:
+- name: eth0
+"@
+
+      Update-Catlet -Id $catlet.Id -Config $updateConfig
+
+      $catlet = Get-Catlet -Id $catlet.Id
+
+      $catlet.Drives | Should -HaveCount 1
+      $catlet.Drives | Assert-Any { $_.Name -ieq 'sda' }
+      $catlet.NetworkAdapters | Should -HaveCount 1
+      $catlet.NetworkAdapters | Assert-Any { $_.Name -ieq 'eth0' }
+    }
   }
 
   Context "Networking" {
