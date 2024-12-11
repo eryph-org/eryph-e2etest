@@ -200,7 +200,7 @@ jobs:
   - task: PowerShell@2
     name: UninstallEryphZero
     displayName: Uninstall eryph-zero
-    condition: and (succeededOrFailed(), eq(variables['task.InstallEryphZero.status'], 'success'))
+    condition: and(succeededOrFailed(), eq(variables['task.InstallEryphZero.status'], 'succeeded'))
     inputs:
       pwsh: true 
       targetType: 'inline'
