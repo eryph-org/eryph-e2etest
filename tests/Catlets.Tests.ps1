@@ -537,33 +537,34 @@ drives:
 - name: sda
 - name: sdb
   size: 50
-network_adapters:
-- name: eth0
-- name: eth1
 "@
       $catlet = New-Catlet -Config $config
 
-      $catlet.Drives | Should -HaveCount 2
-      $catlet.NetworkAdapters | Should -HaveCount 2
+      $vm = Get-VM -Name $catletName
+      $vm.HardDrives | Should -HaveCount 2
+      $vm.HardDrives | Assert-Any { $_.Path.EndsWith('\sda_g1.vhdx') }
+      $vm.HardDrives | Assert-Any { $_.Path.EndsWith('\sdb.vhdx') }
+      $vm.NetworkAdapters | Should -HaveCount 1
+      $vm.NetworkAdapters | Assert-Any { $_.Name -eq 'eth0' }
 
+      # Remove the default network which should also remove the network adapter.
       $updateConfig = @"
 name: $catletName
 project: $($project.Name)
 parent: dbosoft/e2etests-os/base
 drives:
 - name: sda
-network_adapters:
-- name: eth0
+networks:
+- name: default
+  mutation: remove
 "@
 
       Update-Catlet -Id $catlet.Id -Config $updateConfig
 
-      $catlet = Get-Catlet -Id $catlet.Id
-
-      $catlet.Drives | Should -HaveCount 1
-      $catlet.Drives | Assert-Any { $_.Name -ieq 'sda' }
-      $catlet.NetworkAdapters | Should -HaveCount 1
-      $catlet.NetworkAdapters | Assert-Any { $_.Name -ieq 'eth0' }
+      $vm = Get-VM -Name $catletName
+      $vm.HardDrives | Should -HaveCount 1
+      $vm.HardDrives | Assert-Any { $_.Path.EndsWith('\sda_g1.vhdx') }
+      $vm.NetworkAdapters | Should -HaveCount 0
     }
   }
 
