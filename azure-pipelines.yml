@@ -130,18 +130,21 @@ jobs:
     inputs: 
       archiveFilePatterns: $(Pipeline.Workspace)/eryph/zero/*.zip
       destinationFolder: $(Pipeline.Workspace)/eryph/zero/eryph-zero
+
   - task: ExtractFiles@1
     name: ExtractOvs
-    displayName: Extract OVS
+    displayName: Extract Open vSwitch
     inputs: 
       archiveFilePatterns: $(Pipeline.Workspace)/eryph/zero/eryph-zero/ovspackage.zip
       destinationFolder: $(Pipeline.Workspace)/ovs
+
   - task: ExtractFiles@1
     name: ExtractEryphPacker
     displayName: Extract eryph-packer
     inputs: 
       archiveFilePatterns: $(Pipeline.Workspace)/packer/packer/*.zip
       destinationFolder: $(Pipeline.Workspace)/packer/packer/packer
+
   - task: PowerShell@2
     name: SetEnvironmentVariables
     displayName: Set environment variables
@@ -152,6 +155,7 @@ jobs:
         [Environment]::SetEnvironmentVariable("ERYPH_OVN__LOGGING__FILE__LEVEL", "Debug", "Machine")
         [Environment]::SetEnvironmentVariable("ERYPH_SERILOG__MINIMUMLEVEL__DEFAULT", "Verbose", "Machine")
         [Environment]::SetEnvironmentVariable("ERYPH_SERILOG__MINIMUMLEVEL__OVERRIDE__DBOSOFT.OVN", "Information", "Machine")
+
   - task: PowerShell@2
     name: InstallEryphZero
     displayName: Install eryph-zero
@@ -164,6 +168,7 @@ jobs:
           Import-Certificate -FilePath "$(Pipeline.Workspace)/ovs/driver/package.cer" -CertStoreLocation 'Cert:\LocalMachine\TrustedPublisher'
         }
         & "$(Pipeline.Workspace)/eryph/zero/eryph-zero/bin/eryph-zero.exe" install
+
   - task: PowerShell@2
     name: RunTests
     displayName: Run tests
@@ -233,6 +238,7 @@ jobs:
     - Agent.Name -equals vsts-agent
   steps:
   - checkout: none
+
   - task: PowerShell@2
     name: RemoveAgentCatlet
     displayName: Remove agent catlet
@@ -241,6 +247,7 @@ jobs:
       script: |
         Get-Catlet | Stop-Catlet -Force
         Get-Catlet | Remove-Catlet -Force
+
   - task: PowerShell@2
     name: UnregisterAgent
     displayName: Unregister agent
@@ -280,6 +287,7 @@ jobs:
       AZURE_EXTENSION_USE_DYNAMIC_INSTALL: 'yes_without_prompt'
       AZURE_EXTENSION_RUN_AFTER_DYNAMIC_INSTALL: True
       E2E_SP_CLIENT_SECRET: $(E2E_SP_CLIENT_SECRET)
+
   - task: PowerShell@2
     name: Logout
     displayName: Logout
