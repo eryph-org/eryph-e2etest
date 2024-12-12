@@ -132,9 +132,9 @@ fodder:
 
       $tpmResponse = Invoke-SSHCommand -Command 'sudo tpm2_selftest --fulltest; sudo tpm2_gettestresult' -SSHSession $sshSession
       $tpmResponse.ExitStatus | Should -Be 0
-      $tpmResponse.Output[0] | Should -Match 'status:\s+ success'
+      $tpmResponse.Output[0] | Should -Match 'status:\s+success'
 
-      # kvm-ok only exists with code 0 when hardware virtualization is enabled
+      # kvm-ok only exits with code 0 when hardware virtualization is enabled
       $kvmOkResponse = Invoke-SSHCommand -Command 'sudo kvm-ok' -SSHSession $sshSession
       $kvmOkResponse.ExitStatus | Should -Be 0
     }
