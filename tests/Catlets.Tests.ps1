@@ -94,6 +94,52 @@ capabilities:
       $configFromServer | Should -Not -BeNullOrEmpty
     }
 
+    It "Creates catlet with capabilities" {
+      $config = @'
+parent: dbosoft/e2etests-os/base
+capabilities:
+- name: nested_virtualization
+- name: secure_boot
+  details:
+  - template:MicrosoftUEFICertificateAuthority
+- name: tpm
+fodder:
+- name: install-packages
+  type: cloud-config
+  content:
+    packages:
+      - tpm2-tools
+      - cpu-checker
+'@
+
+      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config
+
+      $vmFirmware = Get-VMFirmware -VMName $catletName
+      $vmFirmware.SecureBoot | Should -Be 'On'
+      $vmFirmware.SecureBootTemplate | Should -Be 'MicrosoftUEFICertificateAuthority'
+
+      $vmSecurity = Get-VMSecurity -VMName $catletName
+      $vmSecurity.TpmEnabled | Should -BeTrue
+
+      $vmProcessor = Get-VMProcessor -VMName $catletName
+      $vmProcessor.ExposeVirtualizationExtensions | Should -BeTrue
+
+      $sshSession = Connect-Catlet -CatletId $catlet.Id -WaitForCloudInit
+
+      $secureBootResponse = Invoke-SSHCommand -Command 'mokutil --sb-state' -SSHSession $sshSession
+      $secureBootResponse.ExitStatus | Should -Be 0
+      $secureBootResponse.Output[0] | Should -Be 'SecureBoot enabled'
+
+      $tpmResponse = Invoke-SSHCommand -Command 'sudo tpm2_selftest --fulltest; sudo tpm2_gettestresult' -SSHSession $sshSession
+      $tpmResponse.ExitStatus | Should -Be 0
+      $tpmResponse.Output[0] | Should -Match 'status:\s+ success'
+
+      # kvm-ok only exists with code 0 when hardware virtualization is enabled
+      $kvmOkResponse = Invoke-SSHCommand -Command 'sudo kvm-ok' -SSHSession $sshSession
+      $kvmOkResponse.ExitStatus | Should -Be 0
+    }
+
+
     It "Creates catlet with shorthand configuration" {
       $config = @'
 name: default
@@ -433,6 +479,6 @@ parent: dbosoft/e2etests-os/base
   }
 
   AfterEach {
-    Remove-EryphProject -Id $project.Id -Force
+    # Remove-EryphProject -Id $project.Id -Force
   }
 }
