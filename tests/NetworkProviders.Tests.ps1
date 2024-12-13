@@ -222,11 +222,12 @@ networks:
       $catletIps | Should -HaveCount 1
       ([System.Net.IPNetwork]'10.249.254.0/24').Contains($catletIps[0].IpAddress) | Should -BeTrue
 
-      $internalCatletIps = Get-CatletIp -Id $catlet.Id -Internal
-      $internalCatletIps | Assert-Any { $_.IpAddress -eq '10.0.101.12' }
-      # Currently, the inventory does not update the reported IP addresses
-      # quickly. Hence, we cannot assert the IP address of the flat network.
-      # TODO Update this test after implementing https://github.com/eryph-org/eryph/issues/210
+      Wait-Assert {
+        $internalCatletIps = Get-CatletIp -Id $catlet.Id -Internal
+        $internalCatletIps | Should -HaveCount 2
+        $internalCatletIps | Assert-Any { $_.IpAddress -eq '10.0.101.12' }
+        $internalCatletIps | Assert-Any { $_.IpAddress -eq '172.22.42.43' }
+      }
     }
   }
 

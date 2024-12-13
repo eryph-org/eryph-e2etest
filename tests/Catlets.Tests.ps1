@@ -25,9 +25,9 @@ name: catlet
       $vm = Get-VM -Name $catletName
 
       $vm.DynamicMemoryEnabled | Should -BeTrue
-      $vm.MemoryStartup | Should -BeExactly (1024 * 1024 * 1024)
-      $vm.MemoryMinimum | Should -BeExactly (512 * 1024 * 1024)
-      $vm.MemoryMaximum | Should -BeExactly (1 * 1024 * 1024 * 1024 * 1024)
+      $vm.MemoryStartup | Should -BeExactly 1024MB
+      $vm.MemoryMinimum | Should -BeExactly 512MB
+      $vm.MemoryMaximum | Should -BeExactly 1TB
     }
 
     It "Creates properly configured catlet without parent" {
@@ -55,14 +55,14 @@ network_adapters:
       $vm.ProcessorCount | Should -BeExactly 3
 
       $vm.DynamicMemoryEnabled | Should -BeTrue
-      $vm.MemoryStartup | Should -BeExactly (1024 * 1024 * 1024)
-      $vm.MemoryMinimum | Should -BeExactly (256 * 1024 * 1024)
-      $vm.MemoryMaximum | Should -BeExactly (2048 * 1024 * 1024)
+      $vm.MemoryStartup | Should -BeExactly 1024MB
+      $vm.MemoryMinimum | Should -BeExactly 256MB
+      $vm.MemoryMaximum | Should -BeExactly 2048MB
 
       $vm.HardDrives | Should -HaveCount 1
       $vm.HardDrives[0].Path | Should -BeLike "*\p_$($project.Name)\*\sda.vhdx"
       $vhd = Get-VHD -Path $vm.HardDrives[0].Path
-      $vhd.Size | Should -BeExactly (50 * 1024 * 1024 * 1024)
+      $vhd.Size | Should -BeExactly 50GB
 
       $vm.NetworkAdapters | Should -HaveCount 1
       $vm.NetworkAdapters[0].Name | Should -BeExactly 'public'
@@ -83,7 +83,7 @@ capabilities:
       $vm = Get-VM -Name $catletName
 
       $vm.DynamicMemoryEnabled | Should -BeFalse
-      $vm.MemoryStartup | Should -BeExactly (1024 * 1024 * 1024)
+      $vm.MemoryStartup | Should -BeExactly 1024MB
     }
 
     It "Creates catlet when only the parent is provided" {
@@ -300,7 +300,7 @@ fodder:
     }
   }
 
-  Describe "Update-Catlet" {
+  Context "Update-Catlet" {
     # When updating a catlet, the name and project must be specified
     # in the config. Otherwise, eryph assumes the default values and
     # moves and renames the catlet.
@@ -354,7 +354,34 @@ fodder:
       Update-Catlet -Id $catlet.Id -Config $updateConfig
 
       $vm = Get-VM -Name $catletName
-      $vm.MemoryStartup | Should -BeExactly (2048 * 1024 * 1024)
+      $vm.MemoryStartup | Should -BeExactly 2048MB
+    }
+  }
+
+  Context "Inventory" {
+    It "Updates inventory when catlet is changed in Hyper-V" {
+      $config = @"
+name: $catletName
+project: $($project.Name)
+parent: dbosoft/e2etests-os/base
+cpu:
+  count: 1
+memory:
+  startup: 1024
+"@
+      $catlet = New-Catlet -Config $config
+
+      $vm = Get-Vm -Name $catletName
+      $vm.ProcessorCount | Should -BeExactly 1
+      $vm.MemoryStartup | Should -BeExactly 1024MB
+
+      Set-VM -Name $catletName -ProcessorCount 3 -MemoryStartupBytes 2048MB
+
+      Wait-Assert {
+        $catletConfig = Get-Catlet -Id $catlet.Id -Config
+        $catletConfig | Should -Match 'cpu:\s+count: 3'
+        $catletConfig | Should -Match 'memory:\s+startup: 2048'
+      }
     }
   }
 
@@ -383,6 +410,25 @@ hostname: second
 
       $secondSshResponse = Invoke-SSHCommand -Command 'ping -c 1 -W 1 first.home.arpa' -SSHSession $secondSshSession
       $secondSshResponse.ExitStatus  | Should -Be 0
+    }
+
+    It "Gracefully handles manually assigned IP address" {
+      $catletConfig = @'
+parent: dbosoft/e2etests-os/base
+'@
+
+      $catlet = New-Catlet -Name "$catletName" -ProjectName $project.Name -Config $catletConfig
+      $sshSession = Connect-Catlet -CatletId $catlet.Id -WaitForCloudInit
+    
+      $sshResponse = Invoke-SSHCommand -Command 'sudo ip addr add 172.22.42.43/24 dev eth0' -SSHSession $sshSession
+      $sshResponse.ExitStatus  | Should -Be 0
+
+      Wait-Assert {
+        $internalCatletIps = Get-CatletIp -Id $catlet.Id -Internal
+        $internalCatletIps | Should -HaveCount 2
+        $internalCatletIps | Assert-Any { $_.IpAddress -eq '10.0.0.100' }
+        $internalCatletIps | Assert-Any { $_.IpAddress -eq '172.22.42.43' }
+      }
     }
   }
 
