@@ -430,10 +430,13 @@ memory:
   minimum: 512
   maximum: 1048576
 capabilities:
-- name: dynamic_memory
 - name: nested_virtualization
+- name: secure_boot
+  details:
+  - template:MicrosoftUEFICertificateAuthority
 - name: dynamic_memory
 - name: tpm
+
 "@
       $catletConfig = Get-Catlet -Id $catlet.Id -Config
       $catletConfig | Should -BeLikeExactly $expectedConfig
