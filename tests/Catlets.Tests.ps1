@@ -404,6 +404,42 @@ fodder:
     }
   }
 
+  Context "Get-Catlet" {
+    It "Returns the catlet configuration with capabilities" {
+      $config = @'
+capabilities:
+- name: dynamic_memory
+- name: nested_virtualization
+- name: secure_boot
+  details:
+  - template:MicrosoftUEFICertificateAuthority
+- name: tpm
+'@
+
+      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config
+
+      $expectedConfig = @"
+version: 1.0
+project: $($project.Name)
+name: $catletName
+location: *
+cpu:
+  count: 1
+memory:
+  startup: 1024
+  minimum: 512
+  maximum: 1048576
+capabilities:
+- name: dynamic_memory
+- name: nested_virtualization
+- name: dynamic_memory
+- name: tpm
+"@
+      $catletConfig = Get-Catlet -Id $catlet.Id -Config
+      $catletConfig | Should -BeLikeExactly $expectedConfig
+    }
+  }
+
   Context "Inventory" {
     It "Updates inventory when catlet is changed in Hyper-V" {
       $config = @"
