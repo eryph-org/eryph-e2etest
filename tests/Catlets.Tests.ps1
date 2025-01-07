@@ -94,6 +94,52 @@ capabilities:
       $configFromServer | Should -Not -BeNullOrEmpty
     }
 
+    It "Creates catlet with capabilities" {
+      $config = @'
+parent: dbosoft/e2etests-os/base
+capabilities:
+- name: nested_virtualization
+- name: secure_boot
+  details:
+  - template:MicrosoftUEFICertificateAuthority
+- name: tpm
+fodder:
+- name: install-packages
+  type: cloud-config
+  content:
+    packages:
+      - tpm2-tools
+      - cpu-checker
+'@
+
+      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config
+
+      $vmFirmware = Get-VMFirmware -VMName $catletName
+      $vmFirmware.SecureBoot | Should -Be 'On'
+      $vmFirmware.SecureBootTemplate | Should -Be 'MicrosoftUEFICertificateAuthority'
+
+      $vmSecurity = Get-VMSecurity -VMName $catletName
+      $vmSecurity.TpmEnabled | Should -BeTrue
+
+      $vmProcessor = Get-VMProcessor -VMName $catletName
+      $vmProcessor.ExposeVirtualizationExtensions | Should -BeTrue
+
+      $sshSession = Connect-Catlet -CatletId $catlet.Id -WaitForCloudInit
+
+      $secureBootResponse = Invoke-SSHCommand -Command 'mokutil --sb-state' -SSHSession $sshSession
+      $secureBootResponse.ExitStatus | Should -Be 0
+      $secureBootResponse.Output[0] | Should -Be 'SecureBoot enabled'
+
+      $tpmResponse = Invoke-SSHCommand -Command 'sudo tpm2_selftest --fulltest; sudo tpm2_gettestresult' -SSHSession $sshSession
+      $tpmResponse.ExitStatus | Should -Be 0
+      $tpmResponse.Output[0] | Should -Match 'status:\s+success'
+
+      # kvm-ok only exits with code 0 when hardware virtualization is enabled
+      $kvmOkResponse = Invoke-SSHCommand -Command 'sudo kvm-ok' -SSHSession $sshSession
+      $kvmOkResponse.ExitStatus | Should -Be 0
+    }
+
+
     It "Creates catlet with shorthand configuration" {
       $config = @'
 name: default
@@ -355,6 +401,45 @@ fodder:
 
       $vm = Get-VM -Name $catletName
       $vm.MemoryStartup | Should -BeExactly 2048MB
+    }
+  }
+
+  Context "Get-Catlet" {
+    It "Returns the catlet configuration with capabilities" {
+      $config = @'
+capabilities:
+- name: dynamic_memory
+- name: nested_virtualization
+- name: secure_boot
+  details:
+  - template:MicrosoftUEFICertificateAuthority
+- name: tpm
+'@
+
+      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config
+
+      $expectedConfig = @"
+version: 1.0
+project: $($project.Name)
+name: $catletName
+location: *
+cpu:
+  count: 1
+memory:
+  startup: 1024
+  minimum: 512
+  maximum: 1048576
+capabilities:
+- name: nested_virtualization
+- name: secure_boot
+  details:
+  - template:MicrosoftUEFICertificateAuthority
+- name: dynamic_memory
+- name: tpm
+
+"@
+      $catletConfig = Get-Catlet -Id $catlet.Id -Config
+      $catletConfig | Should -BeLikeExactly $expectedConfig
     }
   }
 
