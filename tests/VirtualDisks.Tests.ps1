@@ -92,6 +92,33 @@ drives:
     }
   }
 
+  Context "Inventory" {
+    It "Updates inventory when disk is added and removed in file system" {
+      $storageIdentifier = "st-$(Get-Date -Format 'yyyyMMddHHmmss')"
+      $diskPath = Join-Path $EryphSettings.DefaultDiskStorePath $storageIdentifier "$diskName.vhdx"
+      New-VHD -Path $diskPath -SizeBytes 64MB -Dynamic
+
+      Wait-Assert {
+        $catletDisks = Get-CatletDisk
+        $catletDisk = $catletDisks | Where-Object { $_.Path -eq $diskPath }
+        $catletDisk | Should -HaveCount 1
+        $catletDisk.Name | Should -Be $diskName
+        $catletDisk.SizeBytes | Should -Be 64MB
+        $catletDisk.Environment | Should -Be "default"
+        $catletDisk.DataStore | Should -Be "default"
+        $catletDisk.Location | Should -Be $storageIdentifier
+        $catletDisk.Path | Should -Be $diskPath
+      }
+
+      Remove-Item -Path $diskPath -Force
+     
+      Wait-Assert {
+        $catletDisks = Get-CatletDisk
+        $catletDisks | Assert-All { $_.Name -ne $diskName }
+      }
+    }
+  }
+
   AfterEach {
     Remove-EryphProject -Id $project.Id -Force
   }
