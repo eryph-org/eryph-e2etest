@@ -43,4 +43,4 @@ $pesterConfig.Output.Verbosity = 'Detailed'
 $pesterConfig.Run.Exit = $True
 $pesterConfig.Run.Path = "$PSScriptRoot/tests"
 $pesterConfig.TestResult.Enabled = $True
-#Invoke-Pester -Configuration $pesterConfig
+Invoke-Pester -Configuration $pesterConfig -TestName "Creates catlet without config"
