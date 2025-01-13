@@ -3,6 +3,7 @@
 # uninstall eryph on a developer's machine.
 #Requires -Version 7.4
 #Requires -Module Pester
+#Requires -Module Assert
 
 $PSNativeCommandUseErrorActionPreference = $true
 $ErrorActionPreference = 'Stop'
