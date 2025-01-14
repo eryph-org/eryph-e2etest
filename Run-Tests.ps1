@@ -42,6 +42,5 @@ $pesterConfig = New-PesterConfiguration
 $pesterConfig.Output.Verbosity = 'Detailed'
 $pesterConfig.Run.Exit = $True
 $pesterConfig.Run.Path = "$PSScriptRoot/tests"
-$pesterConfig.Filter.Tag = "Smoke"
 $pesterConfig.TestResult.Enabled = $True
 Invoke-Pester -Configuration $pesterConfig
