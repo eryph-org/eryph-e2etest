@@ -32,7 +32,7 @@ New-Catlet -Parent "dbosoft/e2etests-os/base" -Name $catletName
 Get-VM | Assert-Any { $_.Name -eq $catletName }
 
 $diskName = "disk-$(Get-Date -Format 'yyyyMMddHHmmss')"
-$disk = New-CatletDisk -Name $diskName -Size 5 -Location test
+$disk = New-CatletDisk -Name $diskName -ProjectName "default" -Size 5 -Location test
 $disk.Path | Should -Exist
 
 Write-Output "Uninstalling eryph-zero..."
