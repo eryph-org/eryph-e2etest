@@ -36,7 +36,7 @@ $disk = New-CatletDisk -Name $diskName -ProjectName "default" -Size 5 -Location 
 $disk.Path | Should -Exist
 
 Write-Output "Uninstalling eryph-zero..."
-$output = & "C:\Program Files\eryph\zero\bin\eryph-zero.exe" uninstall --delete-app-data
+$output = & "C:\Program Files\eryph\zero\bin\eryph-zero.exe" uninstall --delete-app-data --delete-catlets
 
 Write-Output $output
 # Verify that the uninstaller has not logged any warnings.
