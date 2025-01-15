@@ -3,6 +3,7 @@
 # uninstall eryph on a developer's machine.
 #Requires -Version 7.4
 #Requires -Module Pester
+#Requires -Module Assert
 
 $PSNativeCommandUseErrorActionPreference = $true
 $ErrorActionPreference = 'Stop'
@@ -26,8 +27,16 @@ $rootCertificates | Should -HaveCount 1
 $myCertificates = Get-Item Cert:\LocalMachine\My\* | Where-Object { $_.Issuer -ilike "*eryph*" }
 $myCertificates | Should -HaveCount 3
 
+$catletName = "catlet-$(Get-Date -Format 'yyyyMMddHHmmss')"
+New-Catlet -Parent "dbosoft/e2etests-os/base" -Name $catletName
+Get-VM | Assert-Any { $_.Name -eq $catletName }
+
+$diskName = "disk-$(Get-Date -Format 'yyyyMMddHHmmss')"
+$disk = New-CatletDisk -Name $diskName -ProjectName "default" -Size 5 -Location test
+$disk.Path | Should -Exist
+
 Write-Output "Uninstalling eryph-zero..."
-$output = & "C:\Program Files\eryph\zero\bin\eryph-zero.exe" uninstall --delete-app-data
+$output = & "C:\Program Files\eryph\zero\bin\eryph-zero.exe" uninstall --delete-app-data --delete-catlets
 
 Write-Output $output
 # Verify that the uninstaller has not logged any warnings.
@@ -48,3 +57,6 @@ $rootCertificates = Get-Item Cert:\LocalMachine\Root\* | Where-Object { $_.Issue
 $rootCertificates | Should -HaveCount 0
 $myCertificates = Get-Item Cert:\LocalMachine\My\* | Where-Object { $_.Issuer -ilike "*eryph*" }
 $myCertificates | Should -HaveCount 0
+
+Get-VM | Assert-All { $_.Name -ne $catletName }
+$disk.Path | Should -Not -Exist
