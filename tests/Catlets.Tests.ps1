@@ -16,7 +16,7 @@ Describe "Catlets" {
   
   Context "New-Catlet" {
 
-    It "Creates catlet without config" -Tag Smoke {
+    It "Creates catlet without config" {
       $config = @'
 name: catlet
 '@
