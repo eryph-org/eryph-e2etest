@@ -24,10 +24,19 @@ name: catlet
 
       $vm = Get-VM -Name $catletName
 
-      $vm.DynamicMemoryEnabled | Should -BeTrue
+      $vm.DynamicMemoryEnabled | Should -BeFalse
       $vm.MemoryStartup | Should -BeExactly 1024MB
       $vm.MemoryMinimum | Should -BeExactly 512MB
       $vm.MemoryMaximum | Should -BeExactly 1TB
+
+      $vmFirmware = Get-VMFirmware -VMName $catletName
+      $vmFirmware.SecureBoot | Should -Be 'Off'
+
+      $vmSecurity = Get-VMSecurity -VMName $catletName
+      $vmSecurity.TpmEnabled | Should -BeFalse
+
+      $vmProcessor = Get-VMProcessor -VMName $catletName
+      $vmProcessor.ExposeVirtualizationExtensions | Should -BeFalse
     }
 
     It "Creates properly configured catlet without parent" {
@@ -73,6 +82,7 @@ network_adapters:
       $config = @'
 memory:
   startup: 1024
+  maximum: 2048
 capabilities:
 - name: dynamic_memory
   details: ['disabled']
@@ -401,6 +411,52 @@ fodder:
 
       $vm = Get-VM -Name $catletName
       $vm.MemoryStartup | Should -BeExactly 2048MB
+    }
+
+    It "Disables previously enabled capabilities" {
+      $config = @"
+name: $catletName
+project: $($project.Name)
+capabilities:
+- name: dynamic_memory
+- name: nested_virtualization
+- name: secure_boot
+  details:
+  - template:MicrosoftUEFICertificateAuthority
+- name: tpm
+"@
+
+      $catlet = New-Catlet -Config $config
+
+      $vm = Get-VM -Name $catletName
+      $vm.DynamicMemoryEnabled | Should -BeTrue
+
+      $vmFirmware = Get-VMFirmware -VMName $catletName
+      $vmFirmware.SecureBoot | Should -Be 'On'
+
+      $vmSecurity = Get-VMSecurity -VMName $catletName
+      $vmSecurity.TpmEnabled | Should -BeTrue
+
+      $vmProcessor = Get-VMProcessor -VMName $catletName
+      $vmProcessor.ExposeVirtualizationExtensions | Should -BeTrue
+
+      $updateConfig = @"
+name: $catletName
+project: $($project.Name)
+"@
+      Update-Catlet -Id $catlet.Id -Config $updateConfig
+
+      $vm = Get-VM -Name $catletName
+      $vm.DynamicMemoryEnabled | Should -BeFalse
+
+      $vmFirmware = Get-VMFirmware -VMName $catletName
+      $vmFirmware.SecureBoot | Should -Be 'Off'
+
+      $vmSecurity = Get-VMSecurity -VMName $catletName
+      $vmSecurity.TpmEnabled | Should -BeFalse
+
+      $vmProcessor = Get-VMProcessor -VMName $catletName
+      $vmProcessor.ExposeVirtualizationExtensions | Should -BeFalse
     }
   }
 
