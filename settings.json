@@ -1,5 +1,6 @@
 {
   "EryphZeroPath": "C:\\Program Files\\eryph\\zero\\bin",
+  "DefaultDiskStorePath": "C:\\ProgramData\\Microsoft\\Windows\\Virtual Hard Disks\\Eryph",
   "LocalGenePoolPath": "C:\\ProgramData\\Microsoft\\Windows\\Virtual Hard Disks\\Eryph\\genepool",
   "EryphPackerPath": "",
   "ClientRuntimeModulePath": "",
