@@ -734,6 +734,6 @@ networks:
   }
 
   AfterEach {
-    # Remove-EryphProject -Id $project.Id -Force
+    Remove-EryphProject -Id $project.Id -Force
   }
 }
