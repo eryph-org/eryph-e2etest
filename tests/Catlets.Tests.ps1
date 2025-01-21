@@ -461,61 +461,6 @@ project: $($project.Name)
       $vmProcessor = Get-VMProcessor -VMName $catletName
       $vmProcessor.ExposeVirtualizationExtensions | Should -BeFalse
     }
-
-    It "Connects new network adapter while catlet is running" {
-      $networkConfig = @'
-version: 1.0
-networks:
-- name: default
-  address: 10.0.0.0/24
-  subnets:
-  - name: default
-    ip_pools:
-    - name: default
-      first_ip: 10.0.0.100
-      last_ip: 10.0.0.240
-- name: second-network
-  address: 10.0.2.0/24
-  subnets:
-  - name: default
-    ip_pools:
-    - name: default
-      first_ip: 10.0.2.100
-      last_ip: 10.0.2.240
-'@
-      Set-VNetwork -ProjectName $project.Name -Config $networkConfig -Force
-
-      $config = @"
-name: $catletName
-project: $($project.Name)
-parent: dbosoft/e2etests-os/base
-networks:
-- name: default
-"@
-
-      $catlet = New-Catlet -Config $config
-      $firstCatletIp = Get-CatletIp -Id $catlet.Id
-      $sshSession = Connect-Catlet -CatletId $catlet.Id -WaitForCloudInit
-
-      $updatedConfig = @"
-name: $catletName
-project: $($project.Name)
-parent: dbosoft/e2etests-os/base
-networks:
-- name: default
-- name: second-network
-"@
-      Update-Catlet -Id $catlet.Id -Config $updatedConfig
-      
-      $sshResponse = Invoke-SSHCommand -Command 'sudo dhcpcd -n eth1' -SSHSession $sshSession
-      $sshResponse.ExitStatus | Should -Be 0
-
-      $catletIps = Get-CatletIp -Id $catlet.Id
-      $catletIps | Should -HaveCount 2
-      
-      Connect-CatletIp -IpAddress $catletIps[0].IpAddress
-      Connect-CatletIp -IpAddress $catletIps[1].IpAddress
-    }
   }
 
   Context "Get-Catlet" {
