@@ -578,6 +578,6 @@ parent: dbosoft/e2etests-os/base
   }
 
   AfterEach {
-    # Remove-EryphProject -Id $project.Id -Force
+    Remove-EryphProject -Id $project.Id -Force
   }
 }
