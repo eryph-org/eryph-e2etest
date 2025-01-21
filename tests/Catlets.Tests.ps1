@@ -528,12 +528,16 @@ memory:
 
   Context "Networking" {
     It "Connects two catlets in the same project" {
+      # This test uses a special base catlet which is still based on Ubuntu 22.04.
+      # The DNS resolution for local hostnames is broken in Ubuntum 24.04 as OVN
+      # performs some interception of the DNS requests.
+
       $firstConfig = @'
-parent: dbosoft/e2etests-os/base
+parent: dbosoft/e2etests-os22/base
 hostname: first
 '@
       $secondConfig = @'
-parent: dbosoft/e2etests-os/base
+parent: dbosoft/e2etests-os22/base
 hostname: second
 '@
 
@@ -574,6 +578,6 @@ parent: dbosoft/e2etests-os/base
   }
 
   AfterEach {
-    Remove-EryphProject -Id $project.Id -Force
+    # Remove-EryphProject -Id $project.Id -Force
   }
 }

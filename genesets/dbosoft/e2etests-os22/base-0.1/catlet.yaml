@@ -1,0 +1,28 @@
+name: e2etests-base
+parent: dbosoft/ubuntu-22.04/20241216
+
+memory:
+  startup: 512
+
+capabilities:
+  - name: secure_boot
+    details: ['template:MicrosoftUEFICertificateAuthority']
+
+variables:
+- name: e2eUser
+  value: 'e2e'
+  required: true
+- name: e2ePassword
+  value: 'e2e'
+  required: true
+  secret: true
+
+fodder:
+- name: add-user
+  type: cloud-config
+  content: |
+    users:
+      - name: '{{ e2eUser }}'
+        plain_text_passwd: '{{ e2ePassword }}'
+        lock_passwd: false
+        sudo: 'ALL=(ALL) NOPASSWD: ALL'
