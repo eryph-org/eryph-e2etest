@@ -674,9 +674,66 @@ parent: dbosoft/e2etests-os/base
         $internalCatletIps | Assert-Any { $_.IpAddress -eq '172.22.42.43' }
       }
     }
+    
+    It "Connects new network adapter while catlet is running" {
+      $networkConfig = @'
+version: 1.0
+networks:
+- name: default
+  address: 10.0.0.0/24
+  subnets:
+  - name: default
+    ip_pools:
+    - name: default
+      first_ip: 10.0.0.100
+      last_ip: 10.0.0.240
+- name: second-network
+  address: 10.0.1.0/24
+  subnets:
+  - name: default
+    ip_pools:
+    - name: default
+      first_ip: 10.0.1.100
+      last_ip: 10.0.1.240
+'@
+      Set-VNetwork -ProjectName $project.Name -Config $networkConfig -Force
+
+      $config = @"
+name: $catletName
+project: $($project.Name)
+parent: dbosoft/e2etests-os/base
+networks:
+- name: default
+"@
+
+      $catlet = New-Catlet -Config $config
+      $sshSession = Connect-Catlet -CatletId $catlet.Id -WaitForCloudInit
+
+      $updatedConfig = @"
+name: $catletName
+project: $($project.Name)
+parent: dbosoft/e2etests-os/base
+networks:
+- name: default
+- name: second-network
+"@
+      Update-Catlet -Id $catlet.Id -Config $updatedConfig
+      
+      $sshResponse = Invoke-SSHCommand -Command 'sudo dhcpcd -n eth1' -SSHSession $sshSession
+      $sshResponse.ExitStatus | Should -Be 0
+
+      $sshResponse = Invoke-SSHCommand -Command 'ip address show' -SSHSession $sshSession
+      $sshResponse.ExitStatus | Should -Be 0
+      $sshResponse.Output | Assert-Any { $_ -ilike '*inet 10.0.0.100/24*' }
+      $sshResponse.Output | Assert-Any { $_ -ilike '*inet 10.0.1.100/24*' }
+
+      # We cannot connect via SSH to the second IP address as the NAT is currently
+      # broken for the second network. This might be related to
+      # https://github.com/eryph-org/eryph/issues/281.
+    }
   }
 
   AfterEach {
-    Remove-EryphProject -Id $project.Id -Force
+    # Remove-EryphProject -Id $project.Id -Force
   }
 }
