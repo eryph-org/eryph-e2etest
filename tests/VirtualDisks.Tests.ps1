@@ -47,7 +47,7 @@ drives:
       $sdaParentDisk.DataStore | Should -Be "default"
       $sdaParentDisk.ParentId | Should -BeNull
       $sdaParentDisk.Gene | Should -Not -BeNull
-      $sdaParentDisk.Gene.GeneSet | Should -BeLike "dbosoft/ubuntu-22.04/*"
+      $sdaParentDisk.Gene.GeneSet | Should -BeLike "dbosoft/ubuntu-24.04/*"
       $sdaParentDisk.Gene.Name | Should -BeLike "sda"
       $sdaParentDisk.Gene.Architecture | Should -Be "hyperv/amd64"
     }

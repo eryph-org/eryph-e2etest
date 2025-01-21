@@ -1,5 +1,5 @@
 name: e2etests-base
-parent: dbosoft/ubuntu-22.04/20241030
+parent: dbosoft/ubuntu-24.04/20241217
 
 memory:
   startup: 512

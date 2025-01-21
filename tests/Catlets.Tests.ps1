@@ -290,7 +290,7 @@ fodder:
 
     It "Creates catlet based on ubuntu starter" -Tag "UbuntuStarter" {
       $config = @'
-parent: dbosoft/ubuntu-22.04/starter
+parent: dbosoft/ubuntu-24.04/starter
 memory:
   startup: 1024
 variables:
