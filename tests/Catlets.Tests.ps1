@@ -529,8 +529,10 @@ memory:
   Context "Networking" {
     It "Connects two catlets in the same project" {
       # This test uses a special base catlet which is still based on Ubuntu 22.04.
-      # The DNS resolution for local hostnames is broken in Ubuntum 24.04 as OVN
-      # performs some interception of the DNS requests.
+      # The DNS resolution for local hostnames is broken with Ubuntu 24.04. OVN
+      # provides DNS by intercepting the DNS requests for hosts which are part
+      # of an OVN network. This no longer works as Ubuntu 24.04 uses edns0 which
+      # is not supported by OVN.
 
       $firstConfig = @'
 parent: dbosoft/e2etests-os22/base
