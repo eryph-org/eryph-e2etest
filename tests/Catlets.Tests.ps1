@@ -290,7 +290,7 @@ fodder:
 
     It "Creates catlet based on ubuntu starter" -Tag "UbuntuStarter" {
       $config = @'
-parent: dbosoft/ubuntu-22.04/starter
+parent: dbosoft/ubuntu-24.04/starter
 memory:
   startup: 1024
 variables:
@@ -528,12 +528,18 @@ memory:
 
   Context "Networking" {
     It "Connects two catlets in the same project" {
+      # This test uses a special base catlet which is still based on Ubuntu 22.04.
+      # The DNS resolution for local hostnames is broken with Ubuntu 24.04. OVN
+      # provides DNS by intercepting the DNS requests for hosts which are part
+      # of an OVN network. This no longer works as Ubuntu 24.04 uses edns0 which
+      # is not supported by OVN.
+
       $firstConfig = @'
-parent: dbosoft/e2etests-os/base
+parent: dbosoft/e2etests-os22/base
 hostname: first
 '@
       $secondConfig = @'
-parent: dbosoft/e2etests-os/base
+parent: dbosoft/e2etests-os22/base
 hostname: second
 '@
 
