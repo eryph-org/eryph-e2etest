@@ -90,6 +90,20 @@ drives:
       { Remove-CatletDisk -Id $disk.Id -Force } |
         Should -Throw "*The disk is attached to a virtual machine and cannot be deleted*"
     }
+
+    It "Removes the disk" {
+      $disk = New-CatletDisk -Name $diskName -Size 5 -ProjectName $project.Name -Location test
+      $disk.Path | Should -Exist
+
+      Remove-CatletDisk -Id $disk.Id -Force
+
+      $disk.Path | Should -Not -Exist
+
+      # Explicitly check that the disk is not returned by the API
+      # anymore. We use a delete flag in the database.
+      $catletDisks = Get-CatletDisk -ProjectName $project.Name
+      $catletDisks | Assert-All { $_.Name -ine $diskName }
+    }
   }
 
   Context "Inventory" {
