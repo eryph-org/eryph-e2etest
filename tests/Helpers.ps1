@@ -84,15 +84,18 @@ function Connect-CatletIp {
   # succeed while cloud-init is still running. Additionally, this also ensures that
   # cloud-init did not fail.
   while ($true) {
-    $result = Invoke-SSHCommand -Command 'cloud-init status' -SSHSession $sshSession
-    if (($result.Output -inotlike '*not started*') -and ($result.Output -inotlike '*running*')) {
-      if (($result.Output -ilike '*degraded*') -or ($result.Output -ilike '*error*')) {
-        throw "cloud-init reported an error: $($result.Output)"
+    $response = Invoke-SSHCommand -Command 'cloud-init status --format json' -SSHSession $sshSession
+    $json = $response.Output -join ' '
+    $result = ConvertFrom-Json $json -AsHashtable
+    $extendedStatus = $result['extended_status']
+    if (($extendedStatus -inotlike '*not started*') -and ($extendedStatus -inotlike '*running*')) {
+      if (($extendedStatus -ilike '*degraded*') -or ($extendedStatus -ilike '*error*')) {
+        throw "cloud-init reported an error: $json"
       }
       break
     }
     if ((Get-Date) -gt $cutOff) {
-      throw "cloud-init did not finish within the timeout and still reports: $($result.Output)"
+      throw "cloud-init did not finish within the timeout and still reports: $json"
     }
     Start-Sleep -Seconds 5
   }
