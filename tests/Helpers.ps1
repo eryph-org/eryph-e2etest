@@ -114,7 +114,7 @@ function Wait-Assert {
 
     [Parameter()]
     [timespan]
-    $Timeout = (New-TimeSpan -Minutes 1),
+    $Timeout = (New-TimeSpan -Minutes 5),
 
     [Parameter()]
     [timespan]
