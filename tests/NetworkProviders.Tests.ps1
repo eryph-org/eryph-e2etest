@@ -169,8 +169,6 @@ networks:
     ip_pool: second-pool
 "@
 
-      # !BROKEN! This test fails as the catlet is not reachable from the host. Catlets can reach each other and the internet.
-
       $firstCatlet = New-Catlet -Config $catletConfig -Name "$($catletName)-1" -ProjectName $project.Name
       $secondCatlet = New-Catlet -Config $catletConfig -Name "$($catletName)-2" -ProjectName $project.Name
 
@@ -195,7 +193,7 @@ networks:
 
       $sshSession = Connect-CatletIp -IpAddress $firstCatletIps[1].IpAddress -WaitForCloudInit -Timeout (New-TimeSpan -Minutes 2)
       $sshResponse = Invoke-SSHCommand -Command 'hostname' -SSHSession $sshSession
-      $sshResponse.Output | Should -Be "$($catletName)-2"
+      $sshResponse.Output | Should -Be "$($catletName)-1"
       $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[0].IpAddress)" -SSHSession $sshSession
       $sshResponse.ExitStatus  | Should -Be 0
       $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[1].IpAddress)" -SSHSession $sshSession
@@ -315,11 +313,11 @@ networks:
   }
 
   AfterEach {
-    # Remove-EryphProject -Id $project.Id -Force
+    Remove-EryphProject -Id $project.Id -Force
   }
 
   AfterAll {
-    # $providersConfigBackup | eryph-zero.exe networks import --non-interactive
-    # Remove-VMSwitch -Name $flatSwitchName -Force
+    $providersConfigBackup | eryph-zero.exe networks import --non-interactive
+    Remove-VMSwitch -Name $flatSwitchName -Force
   }
 }
