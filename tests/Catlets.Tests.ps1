@@ -105,6 +105,8 @@ capabilities:
     }
 
     It "Creates catlet with capabilities" {
+      # package_reboot_if_required is set to false due to a bug in cloud-init
+      # See https://bugs.launchpad.net/ubuntu/+source/cloud-init/+bug/2094208
       $config = @'
 parent: dbosoft/e2etests-os/base
 capabilities:
@@ -117,6 +119,7 @@ fodder:
 - name: install-packages
   type: cloud-config
   content:
+    package_reboot_if_required: false
     packages:
       - tpm2-tools
       - cpu-checker

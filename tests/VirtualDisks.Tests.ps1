@@ -90,6 +90,47 @@ drives:
       { Remove-CatletDisk -Id $disk.Id -Force } |
         Should -Throw "*The disk is attached to a virtual machine and cannot be deleted*"
     }
+
+    It "Removes the disk" {
+      $disk = New-CatletDisk -Name $diskName -Size 5 -ProjectName $project.Name -Location test
+      $disk.Path | Should -Exist
+
+      Remove-CatletDisk -Id $disk.Id -Force
+
+      $disk.Path | Should -Not -Exist
+
+      # Explicitly check that the disk is not returned by the API
+      # anymore. We use a delete flag in the database.
+      $catletDisks = Get-CatletDisk -ProjectName $project.Name
+      $catletDisks | Assert-All { $_.Name -ine $diskName }
+    }
+  }
+
+  Context "Inventory" {
+    It "Updates inventory when disk is added and removed in file system" {
+      $storageIdentifier = "st-$(Get-Date -Format 'yyyyMMddHHmmss')"
+      $diskPath = Join-Path $EryphSettings.DefaultDiskStorePath $storageIdentifier "$diskName.vhdx"
+      New-VHD -Path $diskPath -SizeBytes 64MB -Dynamic
+
+      Wait-Assert {
+        $catletDisks = Get-CatletDisk
+        $catletDisk = $catletDisks | Where-Object { $_.Path -ieq $diskPath }
+        $catletDisk | Should -HaveCount 1
+        $catletDisk.Name | Should -Be $diskName
+        $catletDisk.SizeBytes | Should -Be 64MB
+        $catletDisk.Environment | Should -Be "default"
+        $catletDisk.DataStore | Should -Be "default"
+        $catletDisk.Location | Should -Be $storageIdentifier
+        $catletDisk.Path | Should -Be $diskPath
+      }
+
+      Remove-Item -Path $diskPath -Force
+     
+      Wait-Assert {
+        $catletDisks = Get-CatletDisk
+        $catletDisks | Assert-All { $_.Name -ine $diskName }
+      }
+    }
   }
 
   AfterEach {
