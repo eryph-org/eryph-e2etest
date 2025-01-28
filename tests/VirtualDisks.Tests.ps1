@@ -114,7 +114,7 @@ drives:
 
       Wait-Assert {
         $catletDisks = Get-CatletDisk
-        $catletDisk = $catletDisks | Where-Object { $_.Path -eq $diskPath }
+        $catletDisk = $catletDisks | Where-Object { $_.Path -ieq $diskPath }
         $catletDisk | Should -HaveCount 1
         $catletDisk.Name | Should -Be $diskName
         $catletDisk.SizeBytes | Should -Be 64MB
@@ -128,7 +128,7 @@ drives:
      
       Wait-Assert {
         $catletDisks = Get-CatletDisk
-        $catletDisks | Assert-All { $_.Name -ne $diskName }
+        $catletDisks | Assert-All { $_.Name -ine $diskName }
       }
     }
   }

@@ -56,6 +56,12 @@ drives:
       }
 
       Remove-EryphProject -Id $project.Id -Force
+
+      $projects = Get-EryphProject
+      $projects | Assert-All { $_.Id -ne $project.Id }
+
+      $diskFiles = Get-ChildItem -Path (Join-Path $EryphSettings.DefaultDiskStorePath $project.Name) -Recurse
+      $diskFiles | Should -BeNullOrEmpty
     }
     
   }

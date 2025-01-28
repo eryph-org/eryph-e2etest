@@ -90,12 +90,12 @@ function Connect-CatletIp {
     $extendedStatus = $result['extended_status']
     if (($extendedStatus -inotlike '*not started*') -and ($extendedStatus -inotlike '*running*')) {
       if (($extendedStatus -ilike '*degraded*') -or ($extendedStatus -ilike '*error*')) {
-        throw "cloud-init reported an error: $json"
+        throw "cloud-init reported an error: $extendedStatus. Output: $json"
       }
       break
     }
     if ((Get-Date) -gt $cutOff) {
-      throw "cloud-init did not finish within the timeout and still reports: $json"
+      throw "cloud-init did not finish within the timeout and still reports: $extendedStatus. Output: $json"
     }
     Start-Sleep -Seconds 5
   }
@@ -117,7 +117,7 @@ function Wait-Assert {
 
     [Parameter()]
     [timespan]
-    $Timeout = (New-TimeSpan -Minutes 5),
+    $Timeout = (New-TimeSpan -Minutes 1),
 
     [Parameter()]
     [timespan]
