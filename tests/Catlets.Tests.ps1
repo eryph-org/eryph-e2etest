@@ -527,6 +527,45 @@ memory:
         $catletConfig | Should -Match 'memory:\s+startup: 2048'
       }
     }
+
+    It "Removes VM hardware which has been removed from the config" {
+      $config = @"
+name: $catletName
+project: $($project.Name)
+parent: dbosoft/e2etests-os/base
+drives:
+- name: sda
+- name: sdb
+  size: 50
+"@
+      $catlet = New-Catlet -Config $config
+
+      $vm = Get-VM -Name $catletName
+      $vm.HardDrives | Should -HaveCount 2
+      $vm.HardDrives | Assert-Any { $_.Path.EndsWith('\sda_g1.vhdx') }
+      $vm.HardDrives | Assert-Any { $_.Path.EndsWith('\sdb.vhdx') }
+      $vm.NetworkAdapters | Should -HaveCount 1
+      $vm.NetworkAdapters | Assert-Any { $_.Name -eq 'eth0' }
+
+      # Remove the default network which should also remove the network adapter.
+      $updateConfig = @"
+name: $catletName
+project: $($project.Name)
+parent: dbosoft/e2etests-os/base
+drives:
+- name: sda
+networks:
+- name: default
+  mutation: remove
+"@
+
+      Update-Catlet -Id $catlet.Id -Config $updateConfig
+
+      $vm = Get-VM -Name $catletName
+      $vm.HardDrives | Should -HaveCount 1
+      $vm.HardDrives | Assert-Any { $_.Path.EndsWith('\sda_g1.vhdx') }
+      $vm.NetworkAdapters | Should -HaveCount 0
+    }
   }
 
   Context "Networking" {
@@ -579,6 +618,63 @@ parent: dbosoft/e2etests-os/base
         $internalCatletIps | Assert-Any { $_.IpAddress -eq '10.0.0.100' }
         $internalCatletIps | Assert-Any { $_.IpAddress -eq '172.22.42.43' }
       }
+    }
+    
+    It "Connects new network adapter while catlet is running" {
+      $networkConfig = @'
+version: 1.0
+networks:
+- name: default
+  address: 10.0.0.0/24
+  subnets:
+  - name: default
+    ip_pools:
+    - name: default
+      first_ip: 10.0.0.100
+      last_ip: 10.0.0.240
+- name: second-network
+  address: 10.0.1.0/24
+  subnets:
+  - name: default
+    ip_pools:
+    - name: default
+      first_ip: 10.0.1.100
+      last_ip: 10.0.1.240
+'@
+      Set-VNetwork -ProjectName $project.Name -Config $networkConfig -Force
+
+      $config = @"
+name: $catletName
+project: $($project.Name)
+parent: dbosoft/e2etests-os/base
+networks:
+- name: default
+"@
+
+      $catlet = New-Catlet -Config $config
+      $sshSession = Connect-Catlet -CatletId $catlet.Id -WaitForCloudInit
+
+      $updatedConfig = @"
+name: $catletName
+project: $($project.Name)
+parent: dbosoft/e2etests-os/base
+networks:
+- name: default
+- name: second-network
+"@
+      Update-Catlet -Id $catlet.Id -Config $updatedConfig
+      
+      $sshResponse = Invoke-SSHCommand -Command 'sudo dhcpcd -n eth1' -SSHSession $sshSession
+      $sshResponse.ExitStatus | Should -Be 0
+
+      $sshResponse = Invoke-SSHCommand -Command 'ip address show' -SSHSession $sshSession
+      $sshResponse.ExitStatus | Should -Be 0
+      $sshResponse.Output | Assert-Any { $_ -ilike '*inet 10.0.0.100/24*' }
+      $sshResponse.Output | Assert-Any { $_ -ilike '*inet 10.0.1.100/24*' }
+
+      # We cannot connect via SSH to the second IP address as the NAT is currently
+      # broken for the second network. This might be related to
+      # https://github.com/eryph-org/eryph/issues/281.
     }
   }
 
