@@ -120,6 +120,87 @@ networks:
     $updatedNetworks[0].IpNetwork | Should -Be '10.0.100.0/28'
   }
 
+  Describe "Project with multiple networks using different overlay providers" {
+    BeforeEach {
+      $projectNetworksConfig = @'
+version: 1.0
+project: default
+networks:
+- name: default
+  provider:
+    name: default
+    subnet: default
+    ip_pool: default
+  address: 10.0.100.0/28
+  subnets:
+  - name: default
+    ip_pools:
+    - name: default
+      first_ip: 10.0.100.8
+      last_ip: 10.0.100.15
+      next_ip: 10.0.100.12
+- name: second
+  provider:
+    name: second-nat-provider
+    subnet: default
+    ip_pool: default
+  address: 10.0.101.0/28
+  subnets:
+  - name: second-subnet
+    ip_pools:
+    - name: second-pool
+      first_ip: 10.0.101.8
+      last_ip: 10.0.101.15
+      next_ip: 10.0.101.12
+- name: flat-network
+  provider: flat-provider
+'@
+      Set-VNetwork -ProjectName $project.Name -Config $projectNetworksConfig -Force
+    }
+
+    It "Connects two catlets to each other and the outside world" {
+      $catletConfig = @"
+parent: dbosoft/e2etests-os/base
+networks:
+- name: default
+- name: second
+  subnet_v4:
+    name: second-subnet
+    ip_pool: second-pool
+"@
+
+      $firstCatlet = New-Catlet -Config $catletConfig -Name "$($catletName)-1" -ProjectName $project.Name
+      $secondCatlet = New-Catlet -Config $catletConfig -Name "$($catletName)-2" -ProjectName $project.Name
+
+      Start-Catlet -Id $firstCatlet.Id -Force
+      Start-Catlet -Id $secondCatlet.Id -Force
+
+      $firstCatletIps = Get-CatletIp -Id $firstCatlet.Id
+      $firstCatletIps | Should -HaveCount 2
+
+      $secondCatletIps = Get-CatletIp -Id $secondCatlet.Id -Internal
+      $secondCatletIps | Should -HaveCount 2
+
+      $sshSession = Connect-CatletIp -IpAddress $firstCatletIps[0].IpAddress -WaitForCloudInit -Timeout (New-TimeSpan -Minutes 2)
+      $sshResponse = Invoke-SSHCommand -Command 'hostname' -SSHSession $sshSession
+      $sshResponse.Output | Should -Be "$($catletName)-1"
+      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[0].IpAddress)" -SSHSession $sshSession
+      $sshResponse.ExitStatus  | Should -Be 0
+      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[1].IpAddress)" -SSHSession $sshSession
+      $sshResponse.ExitStatus  | Should -Be 0
+
+      Remove-SSHSession -SSHSession $sshSession
+
+      $sshSession = Connect-CatletIp -IpAddress $firstCatletIps[1].IpAddress -WaitForCloudInit -Timeout (New-TimeSpan -Minutes 2)
+      $sshResponse = Invoke-SSHCommand -Command 'hostname' -SSHSession $sshSession
+      $sshResponse.Output | Should -Be "$($catletName)-1"
+      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[0].IpAddress)" -SSHSession $sshSession
+      $sshResponse.ExitStatus  | Should -Be 0
+      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[1].IpAddress)" -SSHSession $sshSession
+      $sshResponse.ExitStatus  | Should -Be 0
+    }
+  }
+
   Describe "Project with overlay network and flat network" {
     BeforeEach {
       $projectNetworksConfig = @'
