@@ -550,12 +550,12 @@ variables:
   required: true
 - name: catletId
   type: String
-  value: <<catletId>>
+  value: '#catletId'
   secret: false
   required: false
 - name: vmId
   type: String
-  value: <<vmId>>
+  value: '#vmId'
   secret: false
   required: false
 fodder:
@@ -569,7 +569,7 @@ fodder:
   type: shellscript
   content: |-
     #!/bin/bash
-    echo '<<vmId>>' >> hyperv-vm-id.txt
+    echo '#vmId' >> hyperv-vm-id.txt
   secret: false
 
 "@
@@ -638,7 +638,7 @@ fodder:
     #!/bin/bash
     echo '$($vm.Id)' >> hyperv-vm-id.txt
   secret: false
-s
+
 "@
     }
   }
