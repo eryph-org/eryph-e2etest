@@ -502,12 +502,12 @@ capabilities:
     }
   }
 
-  Context "Test-CatletConfig" {
+  Context "Test-Catlet" {
     It "Quickly validates catlet configuration and returns errors" {
       $config = @'
 name: invalid$name
 '@
-      $result = Test-CatletConfig -Config $config -Quick
+      $result = Test-Catlet -Config $config -Quick
 
       $result.IsValid | Should -BeFalse
       $result.Errors | Should -HaveCount 1
@@ -533,7 +533,7 @@ fodder:
     echo '{{ vmId }}' >> hyperv-vm-id.txt
 "@
 
-      $result = Test-CatletConfig -Config $config -Variables @{ userName = "Eve" } -SkipVariablesPrompt
+      $result = Test-Catlet -Config $config -Variables @{ userName = "Eve" } -SkipVariablesPrompt
 
       $result | Should -Be @"
 name: $catletName
@@ -573,8 +573,59 @@ fodder:
   secret: false
 
 "@
+    }
 
-  }
+    It "Expands configuration for new catlet with only parent" {
+      $result = Test-Catlet -Name $catletName -Parent 'dbosoft/e2etests-os/base' -SkipVariablesPrompt
+
+      $result | Should -Be @"
+name: $catletName
+parent: dbosoft/e2etests-os/base-0.1
+cpu:
+  count: 2
+memory:
+  startup: 512
+drives:
+- name: sda
+  source: gene:dbosoft/ubuntu-24.04/20241217:sda
+network_adapters:
+- name: eth0
+capabilities:
+- name: secure_boot
+  details:
+  - template:MicrosoftUEFICertificateAuthority
+networks:
+- name: default
+  adapter_name: eth0
+variables:
+- name: e2ePassword
+  value: '#REDACTED'
+  secret: true
+  required: true
+- name: e2eUser
+  value: e2e
+  required: true
+- name: catletId
+  type: String
+  value: '#catletId'
+  secret: false
+  required: false
+- name: vmId
+  type: String
+  value: '#vmId'
+  secret: false
+  required: false
+fodder:
+- name: add-user
+  source: gene:dbosoft/e2etests-os/base-0.1:catlet
+  type: cloud-config
+  content: |-
+    #REDACTED
+  secret: true
+
+"@
+
+    }
 
     It "Expands configuration for existing catlet" {
       $config = @"
@@ -599,7 +650,7 @@ fodder:
       $catlet = New-Catlet -Config $config -Variables @{ userName = "Eve" } -SkipVariablesPrompt
       $vm =  Get-VM $catletName
 
-      $result = Test-CatletConfig -Config $config -Id $catlet.Id
+      $result = Test-Catlet -Config $config -Id $catlet.Id
 
       $result | Should -Be @"
 project: $($project.Name)
