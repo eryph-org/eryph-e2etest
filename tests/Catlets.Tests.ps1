@@ -664,17 +664,20 @@ networks:
 "@
       Update-Catlet -Id $catlet.Id -Config $updatedConfig
       
-      $sshResponse = Invoke-SSHCommand -Command 'sudo dhcpcd -n eth1' -SSHSession $sshSession
+      $sshResponse = Invoke-SSHCommand -Command 'sudo dhcpcd --oneshot --debug --timeout 60 --waitip=4 eth1 2>&1' -SSHSession $sshSession
       $sshResponse.ExitStatus | Should -Be 0
+      $sshResponse.Output -join "`n" | Should -BeLike "*adding IP address 10.0.1.100/24*"
 
       $sshResponse = Invoke-SSHCommand -Command 'ip address show' -SSHSession $sshSession
       $sshResponse.ExitStatus | Should -Be 0
       $sshResponse.Output | Assert-Any { $_ -ilike '*inet 10.0.0.100/24*' }
       $sshResponse.Output | Assert-Any { $_ -ilike '*inet 10.0.1.100/24*' }
 
-      # We cannot connect via SSH to the second IP address as the NAT is currently
-      # broken for the second network. This might be related to
-      # https://github.com/eryph-org/eryph/issues/281.
+      # We cannot connect via SSH to the second IP address as the NAT is
+      # broken for the second network. Linux uses the weak host model for
+      # IP which means that a response is not necessary
+      # sent on the same interface as the request was received.
+      # At some point, this test should use multiple network providers.
     }
   }
 
