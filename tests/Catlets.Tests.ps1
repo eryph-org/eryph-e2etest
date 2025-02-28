@@ -675,7 +675,7 @@ networks:
 
       # We cannot connect via SSH to the second IP address as the NAT is
       # broken for the second network. Linux uses the weak host model for
-      # IP which means that a response is not necessary
+      # IP which means that a response is not necessarily
       # sent on the same interface as the request was received.
       # At some point, this test should use multiple network providers.
     }
