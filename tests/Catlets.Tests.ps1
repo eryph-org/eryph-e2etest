@@ -495,7 +495,7 @@ drives:
       $vm.ProcessorCount | Should -BeExactly 3
       $vm.HardDrives | Should -HaveCount 1
       $vhd = Get-VHD -Path $vm.HardDrives[0].Path
-      # Disk size should not change as the disk are skipped when a snapshot exists
+      # Disk size should not change as the disks are skipped when a checkpoint exists
       $vhd.Size | Should -BeExactly 100GB
     }
   }
