@@ -464,7 +464,7 @@ project: $($project.Name)
       $vmProcessor.ExposeVirtualizationExtensions | Should -BeFalse
     }
 
-    It "Updates catlet with snapshot but does not change disks" {
+    It "Updates catlet with checkpoint but does not change disks" {
       $config = @"
 name: $catletName
 project: $($project.Name)
