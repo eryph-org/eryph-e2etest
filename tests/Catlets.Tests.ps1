@@ -20,9 +20,11 @@ Describe "Catlets" {
       $config = @'
 name: catlet
 '@
-      New-Catlet -Name $catletName -ProjectName $project.Name -Config $config
+      $catlet = New-Catlet -Name $catletName -ProjectName $project.Name -Config $config
 
       $vm = Get-VM -Name $catletName
+
+      $catlet.VmId | Should -Be $vm.Id
 
       $vm.DynamicMemoryEnabled | Should -BeFalse
       $vm.MemoryStartup | Should -BeExactly 1024MB
