@@ -463,6 +463,41 @@ project: $($project.Name)
       $vmProcessor = Get-VMProcessor -VMName $catletName
       $vmProcessor.ExposeVirtualizationExtensions | Should -BeFalse
     }
+
+    It "Updates catlet with snapshot but does not change disks" {
+      $config = @"
+name: $catletName
+project: $($project.Name)
+parent: dbosoft/e2etests-os/base
+cpu:
+  count: 2
+drives:
+- name: sda
+  size: 100
+"@
+
+      $catlet = New-Catlet -Config $config
+      Checkpoint-VM -Name $catlet.Name
+
+      $updatedConfig = @"
+name: $catletName
+project: $($project.Name)
+parent: dbosoft/e2etests-os/base
+cpu:
+  count: 3
+drives:
+- name: sda
+  size: 150
+"@
+      Update-Catlet -Id $catlet.Id -Config $updatedConfig
+
+      $vm = Get-VM -Name $catletName
+      $vm.ProcessorCount | Should -BeExactly 3
+      $vm.HardDrives | Should -HaveCount 1
+      $vhd = Get-VHD -Path $vm.HardDrives[0].Path
+      # Disk size should not change as the disk are skipped when a snapshot exists
+      $vhd.Size | Should -BeExactly 100GB
+    }
   }
 
   Context "Get-Catlet" {
