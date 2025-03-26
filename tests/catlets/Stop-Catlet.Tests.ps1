@@ -72,18 +72,12 @@ fodder:
       { Stop-Catlet -Id $catlet.Id -Force -Mode Hard } | Should -Throw
 
       Stop-Catlet -Id $catlet.Id -Force -Mode Kill
-
-      # The catlet has been stopped by killing the VM worker process. Hence,
-      # it might take a moment until the status is refreshed.
-      Wait-Assert {
-        $c = Get-Catlet -Id $catlet.Id
-        $c.Status | Should -Be Stopped
-      }
-
-      Wait-Assert {
-        $v = Get-VM -Name $catletName
-        $v.State | Should -Be Off 
-      }
+      
+      $catlet = Get-Catlet -Id $catlet.Id
+      $catlet.Status | Should -Be Stopped
+    
+      $vm = Get-VM -Name $catletName
+      $vm.State | Should -Be Off 
     }
   }
 
