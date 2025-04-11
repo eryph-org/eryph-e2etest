@@ -15,7 +15,10 @@ Describe "NetworkProviders" {
       $flatSwitch = New-VMSwitch -Name $flatSwitchName -SwitchType Internal
     }
 
-    New-NetIPAddress -InterfaceAlias "vEthernet ($flatSwitchName)" -IPAddress 172.22.42.42 -PrefixLength 24
+    $flatSwitchIpAddress = Get-NetIPAddress -InterfaceAlias "vEthernet (eryph-e2e-flat-switch)" -IPAddress 172.22.42.42 -ErrorAction SilentlyContinue
+    if (-not $flatSwitchIpAddress) {
+      New-NetIPAddress -InterfaceAlias "vEthernet ($flatSwitchName)" -IPAddress 172.22.42.42 -PrefixLength 24
+    }
     
     $providersConfigBackup = eryph-zero.exe networks get
     
@@ -309,6 +312,25 @@ networks:
         $internalCatletIps | Assert-Any { $_.IpAddress -eq '10.0.101.12' }
         $internalCatletIps | Assert-Any { $_.IpAddress -eq '172.22.42.43' }
       }
+    }
+
+    It "Enables MAC address spoofing on flat networks" {
+      $catletConfig = @"
+parent: dbosoft/e2etests-os/base
+network_adapters:
+- name: eth0
+  mac_address_spoofing: true
+networks:
+- name: flat-network
+  adapter_name: eth0
+"@
+        
+      $catlet = New-Catlet -Config $catletConfig -Name $catletName -ProjectName $project.Name
+
+      $networkAdapters = Get-VMNetworkAdapter -VMName $catletName
+      $networkAdapters | Should -HaveCount 1
+      $networkAdapters[0].Name | Should -Be 'eth0'
+      $networkAdapters[0].MacAddressSpoofing | Should -Be $true
     }
   }
 
