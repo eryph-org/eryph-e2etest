@@ -383,19 +383,32 @@ networks:
 "@
       $thirdCatlet = New-Catlet -Config $thirdCatletConfig -Name "$($catletName)-3" -ProjectName $project.Name
 
+      # Start all catlets
       Start-Catlet -Id $firstCatlet.Id -Force
       Start-Catlet -Id $secondCatlet.Id -Force
       Start-Catlet -Id $thirdCatlet.Id -Force
 
-      $firstCatletIps = Get-CatletIp -Id $firstCatlet.Id
+      # Check that all catlets have started and completed the cloud-init initialization
+      $sshSession = Connect-Catlet -CatletId $firstCatlet.Id -WaitForCloudInit
+      Remove-SSHSession -SSHSession $sshSession
+      
+      $sshSession = Connect-Catlet -CatletId $secondCatlet.Id -WaitForCloudInit
+      Remove-SSHSession -SSHSession $sshSession
+      
+      $sshSession = Connect-Catlet -CatletId $thirdCatlet.Id -WaitForCloudInit
+      Remove-SSHSession -SSHSession $sshSession
+
+      # Get the IP addresses of the catlets
+      $firstCatletIps = Get-CatletIp -Id $firstCatlet.Id -Internal
       $firstCatletIps | Should -HaveCount 1
       
-      $secondCatletIps = Get-CatletIp -Id $secondCatlet.Id
+      $secondCatletIps = Get-CatletIp -Id $secondCatlet.Id -Internal
       $secondCatletIps | Should -HaveCount 1
 
-      $thirdCatletIps = Get-CatletIp -Id $thirdCatlet.Id
+      $thirdCatletIps = Get-CatletIp -Id $thirdCatlet.Id -Internal
       $thirdCatletIps | Should -HaveCount 1
 
+      # Check the connectivity between the catlets
       $sshSession = Connect-Catlet -CatletId $firstCatlet.Id -WaitForCloudInit
       $sshResponse = Invoke-SSHCommand -Command 'hostname' -SSHSession $sshSession
       $sshResponse.Output | Should -Be "$($catletName)-1"
@@ -408,20 +421,20 @@ networks:
 
       $sshSession = Connect-Catlet -CatletId $secondCatlet.Id -WaitForCloudInit
       $sshResponse = Invoke-SSHCommand -Command 'hostname' -SSHSession $sshSession
-      $sshResponse.Output | Should -Be "$($catletName)-1"
+      $sshResponse.Output | Should -Be "$($catletName)-2"
       $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($firstCatletIps[0].IpAddress)" -SSHSession $sshSession
       $sshResponse.ExitStatus  | Should -Be 0
-      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($thirdCatletIps[1].IpAddress)" -SSHSession $sshSession
+      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($thirdCatletIps[0].IpAddress)" -SSHSession $sshSession
       $sshResponse.ExitStatus  | Should -Be 0
 
       Remove-SSHSession -SSHSession $sshSession
 
       $sshSession = Connect-Catlet -CatletId $thirdCatlet.Id -WaitForCloudInit
       $sshResponse = Invoke-SSHCommand -Command 'hostname' -SSHSession $sshSession
-      $sshResponse.Output | Should -Be "$($catletName)-1"
+      $sshResponse.Output | Should -Be "$($catletName)-3"
       $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($firstCatletIps[0].IpAddress)" -SSHSession $sshSession
       $sshResponse.ExitStatus  | Should -Be 0
-      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[1].IpAddress)" -SSHSession $sshSession
+      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[0].IpAddress)" -SSHSession $sshSession
       $sshResponse.ExitStatus  | Should -Be 0
     }
   }
