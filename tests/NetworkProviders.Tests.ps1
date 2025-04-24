@@ -361,7 +361,7 @@ networks:
       Set-VNetwork -ProjectName $project.Name -Config $projectNetworksConfig -Force
     }
 
-    It "Connects catlets in all networks" {
+    It "Routes east-west traffic between project networks" {
       $firstCatletConfig =  @"
 parent: dbosoft/e2etests-os/base
 networks:
