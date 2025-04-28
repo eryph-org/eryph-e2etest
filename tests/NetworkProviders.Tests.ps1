@@ -9,7 +9,7 @@ BeforeAll {
 
 Describe "NetworkProviders" {
   BeforeAll {
-    $flatSwitchName = 'eryph-e2e-flat-switch'
+    $flatSwitchName = 'eryph-e2etests-flat-switch'
     $flatSwitch = Get-VMSwitch -Name $flatSwitchName -ErrorAction SilentlyContinue
     if (-not $flatSwitch) {
       $flatSwitch = New-VMSwitch -Name $flatSwitchName -SwitchType Internal
