@@ -1,5 +1,6 @@
 #Requires -Version 7.4
 
+Set-StrictMode -Version 3.0
 $PSNativeCommandUseErrorActionPreference = $true
 $ErrorActionPreference = 'Stop'
 
@@ -9,6 +10,7 @@ Write-Output "Installing required Powershell modules..."
 Install-Module -Name Pester -Force -Scope CurrentUser
 Install-Module -Name Assert -Force -Scope CurrentUser
 Install-Module -Name Posh-SSH -Force -Scope CurrentUser
+Install-Module -Name powershell-yaml -Force -Scope CurrentUser
 Install-Module -Name Eryph.ComputeClient -Force -Scope CurrentUser
 Install-Module -Name Eryph.IdentityClient -Force -Scope CurrentUser
 

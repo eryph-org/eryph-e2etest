@@ -5,6 +5,7 @@
 #Requires -Module Pester
 #Requires -Module Assert
 
+Set-StrictMode -Version 3.0
 $PSNativeCommandUseErrorActionPreference = $true
 $ErrorActionPreference = 'Stop'
 

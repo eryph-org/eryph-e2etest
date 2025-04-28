@@ -9,7 +9,7 @@ BeforeAll {
 
 Describe "NetworkProviders" {
   BeforeAll {
-    $flatSwitchName = 'eryph-e2e-flat-switch'
+    $flatSwitchName = 'eryph-e2etests-flat-switch'
     $flatSwitch = Get-VMSwitch -Name $flatSwitchName -ErrorAction SilentlyContinue
     if (-not $flatSwitch) {
       $flatSwitch = New-VMSwitch -Name $flatSwitchName -SwitchType Internal
@@ -309,6 +309,136 @@ networks:
         $internalCatletIps | Assert-Any { $_.IpAddress -eq '10.0.101.12' }
         $internalCatletIps | Assert-Any { $_.IpAddress -eq '172.22.42.43' }
       }
+    }
+  }
+
+  Describe "Project with with mutliple providers and multiple networks per provider" {
+    BeforeEach {
+      $projectNetworksConfig = @'
+version: 1.0
+project: default
+networks:
+- name: default
+  provider:
+    name: default
+    subnet: default
+    ip_pool: default
+  address: 10.0.100.0/28
+  subnets:
+  - name: default
+    ip_pools:
+    - name: default
+      first_ip: 10.0.100.8
+      last_ip: 10.0.100.15
+      next_ip: 10.0.100.12
+- name: second
+  provider:
+    name: default
+    subnet: default
+    ip_pool: default
+  address: 10.0.101.0/28
+  subnets:
+  - name: default
+    ip_pools:
+    - name: default
+      first_ip: 10.0.101.8
+      last_ip: 10.0.101.15
+      next_ip: 10.0.101.12
+- name: third
+  provider:
+    name: second-nat-provider
+    subnet: default
+    ip_pool: default
+  address: 10.0.102.0/28
+  subnets:
+  - name: default
+    ip_pools:
+    - name: default
+      first_ip: 10.0.102.8
+      last_ip: 10.0.102.15
+      next_ip: 10.0.102.12
+'@
+      Set-VNetwork -ProjectName $project.Name -Config $projectNetworksConfig -Force
+    }
+
+    It "Routes east-west traffic between project networks" {
+      $firstCatletConfig =  @"
+parent: dbosoft/e2etests-os/base
+networks:
+- name: default
+"@
+      $firstCatlet = New-Catlet -Config $firstCatletConfig -Name "$($catletName)-1" -ProjectName $project.Name
+      
+      $secondCatletConfig =  @"
+parent: dbosoft/e2etests-os/base
+networks:
+- name: second
+"@
+      $secondCatlet = New-Catlet -Config $secondCatletConfig -Name "$($catletName)-2" -ProjectName $project.Name
+
+      $thirdCatletConfig =  @"
+parent: dbosoft/e2etests-os/base
+networks:
+- name: third
+"@
+      $thirdCatlet = New-Catlet -Config $thirdCatletConfig -Name "$($catletName)-3" -ProjectName $project.Name
+
+      # Start all catlets
+      Start-Catlet -Id $firstCatlet.Id -Force
+      Start-Catlet -Id $secondCatlet.Id -Force
+      Start-Catlet -Id $thirdCatlet.Id -Force
+
+      # Check that all catlets have started and completed the cloud-init initialization
+      $sshSession = Connect-Catlet -CatletId $firstCatlet.Id -WaitForCloudInit
+      Remove-SSHSession -SSHSession $sshSession
+      
+      $sshSession = Connect-Catlet -CatletId $secondCatlet.Id -WaitForCloudInit
+      Remove-SSHSession -SSHSession $sshSession
+      
+      $sshSession = Connect-Catlet -CatletId $thirdCatlet.Id -WaitForCloudInit
+      Remove-SSHSession -SSHSession $sshSession
+
+      # Get the IP addresses of the catlets
+      $firstCatletIps = Get-CatletIp -Id $firstCatlet.Id -Internal
+      $firstCatletIps | Should -HaveCount 1
+      $firstCatletIps[0].IpAddress | Should -Be '10.0.100.12'
+      
+      $secondCatletIps = Get-CatletIp -Id $secondCatlet.Id -Internal
+      $secondCatletIps | Should -HaveCount 1
+      $secondCatletIps[0].IpAddress | Should -Be '10.0.101.12'
+
+      $thirdCatletIps = Get-CatletIp -Id $thirdCatlet.Id -Internal
+      $thirdCatletIps | Should -HaveCount 1
+      $thirdCatletIps[0].IpAddress | Should -Be '10.0.102.12'
+
+      # Check the connectivity between the catlets
+      $sshSession = Connect-Catlet -CatletId $firstCatlet.Id -WaitForCloudInit
+      $sshResponse = Invoke-SSHCommand -Command 'hostname' -SSHSession $sshSession
+      $sshResponse.Output | Should -Be "$($catletName)-1"
+      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[0].IpAddress)" -SSHSession $sshSession
+      $sshResponse.ExitStatus  | Should -Be 0
+      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($thirdCatletIps[0].IpAddress)" -SSHSession $sshSession
+      $sshResponse.ExitStatus  | Should -Be 0
+
+      Remove-SSHSession -SSHSession $sshSession
+
+      $sshSession = Connect-Catlet -CatletId $secondCatlet.Id -WaitForCloudInit
+      $sshResponse = Invoke-SSHCommand -Command 'hostname' -SSHSession $sshSession
+      $sshResponse.Output | Should -Be "$($catletName)-2"
+      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($firstCatletIps[0].IpAddress)" -SSHSession $sshSession
+      $sshResponse.ExitStatus  | Should -Be 0
+      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($thirdCatletIps[0].IpAddress)" -SSHSession $sshSession
+      $sshResponse.ExitStatus  | Should -Be 0
+
+      Remove-SSHSession -SSHSession $sshSession
+
+      $sshSession = Connect-Catlet -CatletId $thirdCatlet.Id -WaitForCloudInit
+      $sshResponse = Invoke-SSHCommand -Command 'hostname' -SSHSession $sshSession
+      $sshResponse.Output | Should -Be "$($catletName)-3"
+      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($firstCatletIps[0].IpAddress)" -SSHSession $sshSession
+      $sshResponse.ExitStatus  | Should -Be 0
+      $sshResponse = Invoke-SSHCommand -Command "ping -c 1 -W 1 $($secondCatletIps[0].IpAddress)" -SSHSession $sshSession
+      $sshResponse.ExitStatus  | Should -Be 0
     }
   }
 
