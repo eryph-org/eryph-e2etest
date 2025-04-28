@@ -97,9 +97,11 @@ networks:
       # Get the IP addresses of the catlets
       $firstCatletIps = Get-CatletIp -Id $firstCatlet.Id -Internal
       $firstCatletIps | Should -HaveCount 1
+      $firstCatletIps[0].IpAddress | Should -Be '10.0.100.12'
       
       $secondCatletIps = Get-CatletIp -Id $secondCatlet.Id -Internal
       $secondCatletIps | Should -HaveCount 1
+      $secondCatletIps[0].IpAddress | Should -Be '10.0.101.12'
 
       # Check the connectivity between the catlets
       $sshSession = Connect-Catlet -CatletId $firstCatlet.Id -WaitForCloudInit
