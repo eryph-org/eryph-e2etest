@@ -54,7 +54,7 @@ fodder:
     $ProgressPreference = 'SilentlyContinue'
     Invoke-WebRequest -Uri 'https://github.com/PowerShell/PowerShell/releases/download/v7.4.7/PowerShell-7.4.7-win-x64.msi' -OutFile C:\PowerShell-7.4.7-win-x64.msi
     msiexec.exe /package C:\PowerShell-7.4.7-win-x64.msi /quiet REGISTER_MANIFEST=1 ADD_PATH=1
-- source: gene:dbosoft/vsts/1.1.1:agent-sp
+- source: gene:dbosoft/vsts/1.2:agent-sp
   variables:
   - name: clientSecret
     value: '{{ clientSecret }}'
