@@ -291,6 +291,10 @@ networks:
 
       Update-Catlet -Id $catlet.Id -Config $updatedCatletConfig
 
+      $networkAdapters = Get-VMNetworkAdapter -VMName $catletName
+      $networkAdapters | Should -HaveCount 2
+      $networkAdapters | Assert-All { $_.MacAddressSpoofing -eq $false }
+
       $sshResponse = Invoke-SSHCommand -Command 'sudo ip link set eth1 up' -SSHSession $sshSession
       $sshResponse.ExitStatus  | Should -Be 0
 
