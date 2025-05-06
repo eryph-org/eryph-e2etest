@@ -293,7 +293,19 @@ networks:
 
       $networkAdapters = Get-VMNetworkAdapter -VMName $catletName
       $networkAdapters | Should -HaveCount 2
-      $networkAdapters | Assert-All { $_.MacAddressSpoofing -eq $false }
+      
+      $eth0Adapter = $networkAdapters | Where-Object { $_.Name -eq 'eth0' }
+      $eth0Adapter | Should -Not -BeNullOrEmpty
+      $eth0Adapter.MacAddressSpoofing | Should -Be $false
+      $eth0Adapter.DhcpGuard | Should -Be $false
+      $eth0Adapter.RouterGuard | Should -Be $false
+
+      $eth1Adapter = $networkAdapters | Where-Object { $_.Name -eq 'eth1' }
+      $eth1Adapter | Should -Not -BeNullOrEmpty
+      $eth1Adapter.MacAddressSpoofing | Should -Be $false
+      # DHCP guard and router guard are enabled by default for flat networks.
+      $eth1Adapter.DhcpGuard | Should -Be $true
+      $eth1Adapter.RouterGuard | Should -Be $true
 
       $sshResponse = Invoke-SSHCommand -Command 'sudo ip link set eth1 up' -SSHSession $sshSession
       $sshResponse.ExitStatus  | Should -Be 0
@@ -318,12 +330,14 @@ networks:
       }
     }
 
-    It "Enables MAC address spoofing on flat networks" {
+    It "Configure adapter security settings on flat network" {
       $catletConfig = @"
 parent: dbosoft/e2etests-os/base
 network_adapters:
 - name: eth0
   mac_address_spoofing: true
+  dhcp_guard: false
+  router_guard: false
 networks:
 - name: flat-network
   adapter_name: eth0
@@ -335,6 +349,8 @@ networks:
       $networkAdapters | Should -HaveCount 1
       $networkAdapters[0].Name | Should -Be 'eth0'
       $networkAdapters[0].MacAddressSpoofing | Should -Be $true
+      $networkAdapters[0].DhcpGuard | Should -Be $false
+      $networkAdapters[0].RouterGuard | Should -Be $false
     }
   }
 
