@@ -15,7 +15,7 @@ Describe "NetworkProviders" {
       $flatSwitch = New-VMSwitch -Name $flatSwitchName -SwitchType Internal
     }
 
-    $flatSwitchIpAddress = Get-NetIPAddress -InterfaceAlias "vEthernet (eryph-e2e-flat-switch)" -IPAddress 172.22.42.42 -ErrorAction SilentlyContinue
+    $flatSwitchIpAddress = Get-NetIPAddress -InterfaceAlias "vEthernet ($flatSwitchName)" -IPAddress 172.22.42.42 -ErrorAction SilentlyContinue
     if (-not $flatSwitchIpAddress) {
       New-NetIPAddress -InterfaceAlias "vEthernet ($flatSwitchName)" -IPAddress 172.22.42.42 -PrefixLength 24
     }
