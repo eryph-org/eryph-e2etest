@@ -53,10 +53,16 @@ fodder:
     #ps1_sysnative
     $ErrorActionPreference = 'Stop'
     Set-StrictMode -Version 3.0
-    $global:ProgressPreference = 'SilentlyContinue'
+    $ProgressPreference = 'SilentlyContinue'
+
+    if ([System.Net.ServicePointManager]::SecurityProtocol -ne 0) {
+      [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+    }
+    
     Invoke-WebRequest -Uri 'https://github.com/PowerShell/PowerShell/releases/download/v7.4.7/PowerShell-7.4.7-win-x64.msi' -OutFile C:\PowerShell-7.4.7-win-x64.msi -UseBasicParsing
-    msiexec.exe /package C:\PowerShell-7.4.7-win-x64.msi /quiet REGISTER_MANIFEST=1 ADD_PATH=1
-    if ($LASTEXITCODE -ne 0) {
+    $process = Start-Process -FilePath 'msiexec.exe' -ArgumentList "/package C:\PowerShell-7.4.7-win-x64.msi /quiet /norestart REGISTER_MANIFEST=1 ADD_PATH=1" -Wait -PassThru
+
+    if ($process.ExitCode -ne 0 -and $process.ExitCode -ne 3010) {
       throw "msiexec.exe failed with exit code $LASTEXITCODE"
     }
 - name: azure-agent
