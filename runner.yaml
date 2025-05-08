@@ -67,6 +67,7 @@ fodder:
     }
 - name: azure-agent
   filename: azure_agent.ps1
+  type: shellscript
   content: |
     #ps1_sysnative
     $ErrorActionPreference = 'Stop'
