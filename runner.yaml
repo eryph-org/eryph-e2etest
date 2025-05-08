@@ -51,11 +51,44 @@ fodder:
   fileName: Install-Pwsh.ps1
   content: |
     #ps1_sysnative
-    $ProgressPreference = 'SilentlyContinue'
-    Invoke-WebRequest -Uri 'https://github.com/PowerShell/PowerShell/releases/download/v7.4.7/PowerShell-7.4.7-win-x64.msi' -OutFile C:\PowerShell-7.4.7-win-x64.msi
+    $ErrorActionPreference = 'Stop'
+    Set-StrictMode -Version 3.0
+    $global:ProgressPreference = 'SilentlyContinue'
+    Invoke-WebRequest -Uri 'https://github.com/PowerShell/PowerShell/releases/download/v7.4.7/PowerShell-7.4.7-win-x64.msi' -OutFile C:\PowerShell-7.4.7-win-x64.msi -UseBasicParsing
     msiexec.exe /package C:\PowerShell-7.4.7-win-x64.msi /quiet REGISTER_MANIFEST=1 ADD_PATH=1
-- source: gene:dbosoft/vsts/1.2:agent-sp
+    if ($LASTEXITCODE -ne 0) {
+      throw "msiexec.exe failed with exit code $LASTEXITCODE"
+    }
+- name: azure-agent
+  filename: azure_agent.ps1
+  content: |
+    #ps1_sysnative
+    $ErrorActionPreference = 'Stop'
+    Set-StrictMode -Version 3.0
+    $global:ProgressPreference = 'SilentlyContinue'
+
+    if ([System.Net.ServicePointManager]::SecurityProtocol -ne 0) {
+      [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+    }
+
+    $version = '{{ agentVersion }}'
+    if ($version -eq 'latest') {
+        $releaseInfo = Invoke-RestMethod https://api.github.com/repos/Microsoft/azure-pipelines-agent/releases/latest -UseBasicParsing
+        $version = $releaseInfo.tag_name -replace '^v', ''
+    }
+
+    Invoke-WebRequest -Uri "https://download.agent.dev.azure.com/agent/$version/vsts-agent-win-x64-$version.zip" -OutFile C:\vsts-agent.zip -UseBasicParsing
+
+    Expand-Archive -Path C:\vsts-agent.zip -DestinationPath C:\a
+    Remove-Item -Path C:\vsts-agent.zip
+    Set-Location C:\a
+    .\config.cmd --unattended --url '{{ devopsUrls }}' --auth SP --clientId '{{ clientId }}' --tenantId '{{ tenantId }}' --clientSecret '{{ clientSecret }}'  --pool '{{ poolName }}' --agent '{{ agentName }}' --acceptTeeEula --replace --runAsService --windowsLogonAccount vsts-agent --windowsLogonPassword '{{ agentPassword }}'
+    if ($LASTEXITCODE -ne 0) {
+        throw "config.cmd failed with exit code $LASTEXITCODE"
+    }
   variables:
+  - name: agentVersion
+    value: latest
   - name: clientSecret
     value: '{{ clientSecret }}'
   - name: clientId
