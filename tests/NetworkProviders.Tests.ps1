@@ -15,7 +15,10 @@ Describe "NetworkProviders" {
       $flatSwitch = New-VMSwitch -Name $flatSwitchName -SwitchType Internal
     }
 
-    New-NetIPAddress -InterfaceAlias "vEthernet ($flatSwitchName)" -IPAddress 172.22.42.42 -PrefixLength 24
+    $flatSwitchIpAddress = Get-NetIPAddress -InterfaceAlias "vEthernet ($flatSwitchName)" -IPAddress 172.22.42.42 -ErrorAction SilentlyContinue
+    if (-not $flatSwitchIpAddress) {
+      New-NetIPAddress -InterfaceAlias "vEthernet ($flatSwitchName)" -IPAddress 172.22.42.42 -PrefixLength 24
+    }
     
     $providersConfigBackup = eryph-zero.exe networks get
     
@@ -288,6 +291,22 @@ networks:
 
       Update-Catlet -Id $catlet.Id -Config $updatedCatletConfig
 
+      $networkAdapters = Get-VMNetworkAdapter -VMName $catletName
+      $networkAdapters | Should -HaveCount 2
+      
+      $eth0Adapter = $networkAdapters | Where-Object { $_.Name -eq 'eth0' }
+      $eth0Adapter | Should -Not -BeNullOrEmpty
+      $eth0Adapter.MacAddressSpoofing | Should -Be 'Off'
+      $eth0Adapter.DhcpGuard | Should -Be 'Off'
+      $eth0Adapter.RouterGuard | Should -Be 'Off'
+
+      $eth1Adapter = $networkAdapters | Where-Object { $_.Name -eq 'eth1' }
+      $eth1Adapter | Should -Not -BeNullOrEmpty
+      $eth1Adapter.MacAddressSpoofing | Should -Be 'Off'
+      # DHCP guard and router guard are enabled by default for flat networks.
+      $eth1Adapter.DhcpGuard | Should -Be 'On'
+      $eth1Adapter.RouterGuard | Should -Be 'On'
+
       $sshResponse = Invoke-SSHCommand -Command 'sudo ip link set eth1 up' -SSHSession $sshSession
       $sshResponse.ExitStatus  | Should -Be 0
 
@@ -309,6 +328,29 @@ networks:
         $internalCatletIps | Assert-Any { $_.IpAddress -eq '10.0.101.12' }
         $internalCatletIps | Assert-Any { $_.IpAddress -eq '172.22.42.43' }
       }
+    }
+
+    It "Configure adapter security settings on flat network" {
+      $catletConfig = @"
+parent: dbosoft/e2etests-os/base
+network_adapters:
+- name: eth0
+  mac_address_spoofing: true
+  dhcp_guard: false
+  router_guard: false
+networks:
+- name: flat-network
+  adapter_name: eth0
+"@
+        
+      New-Catlet -Config $catletConfig -Name $catletName -ProjectName $project.Name
+
+      $networkAdapters = Get-VMNetworkAdapter -VMName $catletName
+      $networkAdapters | Should -HaveCount 1
+      $networkAdapters[0].Name | Should -Be 'eth0'
+      $networkAdapters[0].MacAddressSpoofing | Should -Be 'On'
+      $networkAdapters[0].DhcpGuard | Should -Be 'Off'
+      $networkAdapters[0].RouterGuard | Should -Be 'Off'
     }
   }
 
