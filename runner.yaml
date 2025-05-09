@@ -65,6 +65,19 @@ fodder:
     if ($process.ExitCode -ne 0 -and $process.ExitCode -ne 3010) {
       throw "msiexec.exe failed with exit code $LASTEXITCODE"
     }
+
+- name: agent-user
+  type: cloud-config
+  secret: true
+  content: |
+    users:
+      - name: vsts-agent
+        groups: [ "Administrators" ]
+        passwd: {{ agentPassword }}
+  variables:
+  - name: agentPassword
+    value: '{{ agentPassword }}'
+
 - name: azure-agent
   filename: azure_agent.ps1
   type: shellscript
