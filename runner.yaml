@@ -46,66 +46,8 @@ fodder:
     #ps1_sysnative
     bcdedit /set testsigning on
 - source: gene:dbosoft/hyperv:install
-- name: install-pwsh
-  type: shellscript
-  fileName: Install-Pwsh.ps1
-  content: |
-    #ps1_sysnative
-    $ErrorActionPreference = 'Stop'
-    Set-StrictMode -Version 3.0
-    $ProgressPreference = 'SilentlyContinue'
-
-    if ([System.Net.ServicePointManager]::SecurityProtocol -ne 0) {
-      [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-    }
-    
-    Invoke-WebRequest -Uri 'https://github.com/PowerShell/PowerShell/releases/download/v7.4.7/PowerShell-7.4.7-win-x64.msi' -OutFile C:\PowerShell-7.4.7-win-x64.msi -UseBasicParsing
-    $process = Start-Process -FilePath 'msiexec.exe' -ArgumentList "/package C:\PowerShell-7.4.7-win-x64.msi /quiet /norestart REGISTER_MANIFEST=1 ADD_PATH=1" -Wait -PassThru
-
-    if ($process.ExitCode -ne 0 -and $process.ExitCode -ne 3010) {
-      throw "msiexec.exe failed with exit code $LASTEXITCODE"
-    }
-
-- name: agent-user
-  type: cloud-config
-  secret: true
-  content: |
-    users:
-      - name: vsts-agent
-        groups: [ "Administrators" ]
-        passwd: {{ agentPassword }}
-  variables:
-  - name: agentPassword
-    value: '{{ agentPassword }}'
-
-- name: azure-agent
-  filename: azure_agent.ps1
-  type: shellscript
-  content: |
-    #ps1_sysnative
-    $ErrorActionPreference = 'Stop'
-    Set-StrictMode -Version 3.0
-    $global:ProgressPreference = 'SilentlyContinue'
-
-    if ([System.Net.ServicePointManager]::SecurityProtocol -ne 0) {
-      [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-    }
-
-    $version = '{{ agentVersion }}'
-    if ($version -eq 'latest') {
-        $releaseInfo = Invoke-RestMethod https://api.github.com/repos/Microsoft/azure-pipelines-agent/releases/latest -UseBasicParsing
-        $version = $releaseInfo.tag_name -replace '^v', ''
-    }
-
-    Invoke-WebRequest -Uri "https://download.agent.dev.azure.com/agent/$version/vsts-agent-win-x64-$version.zip" -OutFile C:\vsts-agent.zip -UseBasicParsing
-
-    Expand-Archive -Path C:\vsts-agent.zip -DestinationPath C:\a
-    Remove-Item -Path C:\vsts-agent.zip
-    Set-Location C:\a
-    .\config.cmd --unattended --url '{{ devopsUrls }}' --auth SP --clientId '{{ clientId }}' --tenantId '{{ tenantId }}' --clientSecret '{{ clientSecret }}'  --pool '{{ poolName }}' --agent '{{ agentName }}' --acceptTeeEula --replace --runAsService --windowsLogonAccount vsts-agent --windowsLogonPassword '{{ agentPassword }}'
-    if ($LASTEXITCODE -ne 0) {
-        throw "config.cmd failed with exit code $LASTEXITCODE"
-    }
+- source: gene:dbosoft/powershell/1.0:win-install
+- source: gene:dbosoft/vsts/2.0:agent-sp
   variables:
   - name: agentVersion
     value: latest
