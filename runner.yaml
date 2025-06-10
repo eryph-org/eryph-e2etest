@@ -46,16 +46,11 @@ fodder:
     #ps1_sysnative
     bcdedit /set testsigning on
 - source: gene:dbosoft/hyperv:install
-- name: install-pwsh
-  type: shellscript
-  fileName: Install-Pwsh.ps1
-  content: |
-    #ps1_sysnative
-    $ProgressPreference = 'SilentlyContinue'
-    Invoke-WebRequest -Uri 'https://github.com/PowerShell/PowerShell/releases/download/v7.4.5/PowerShell-7.4.5-win-x64.msi' -OutFile C:\PowerShell-7.4.5-win-x64.msi
-    msiexec.exe /package C:\PowerShell-7.4.5-win-x64.msi /quiet REGISTER_MANIFEST=1 ADD_PATH=1
-- source: gene:dbosoft/vsts/1.1.1:agent-sp
+- source: gene:dbosoft/powershell/1.0:win-install
+- source: gene:dbosoft/vsts/2.0:agent-sp
   variables:
+  - name: agentVersion
+    value: latest
   - name: clientSecret
     value: '{{ clientSecret }}'
   - name: clientId
