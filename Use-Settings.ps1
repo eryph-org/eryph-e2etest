@@ -22,6 +22,14 @@ if ($env:E2E_ERYPH_PACKER_PATH) {
   $env:Path = "$($env:E2E_ERYPH_PACKER_PATH);$($env:Path)"
 }
 
+if ($EryphSettings.EgsToolPath) {
+  $env:Path = "$($EryphSettings.EgsToolPath);$($env:Path)"
+}
+
+if ($env:E2E_EGS_TOOL_PATH) {
+  $env:Path = "$($env:E2E_EGS_TOOL_PATH);$($env:Path)"
+}
+
 if ($EryphSettings.ClientRuntimeModulePath) {
   $env:PSModulePath = "$($EryphSettings.ClientRuntimeModulePath);$($env:PSModulePath)"
 }
