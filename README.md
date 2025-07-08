@@ -9,3 +9,8 @@ You can run the tests locally as follows:
 4. Open this repository in VS Code as administrator
 5. Make sure the Pester extension is installed. Visual Studio should prompt you.
 6. Run the desired test(s) in the VS Code test explorer
+
+## Notes
+- Powershell strict mode `Set-StrictMode` is not used as it is not supported
+  by Pester v5. Both the `Assert` module and Pester's builtin assertions will
+  e.g. access missing properties without checks or error handling.
