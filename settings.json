@@ -1,12 +1,12 @@
 {
-  "EryphZeroPath": "C:\\Program Files\\eryph\\zero\\bin",
+  "EryphZeroPath": "D:\\git\\eryph\\src\\apps\\src\\Eryph-zero\\bin\\Debug\\net8.0-windows\\win-x64",
   "DefaultDiskStorePath": "C:\\ProgramData\\Microsoft\\Windows\\Virtual Hard Disks\\Eryph",
   "LocalGenePoolPath": "C:\\ProgramData\\Microsoft\\Windows\\Virtual Hard Disks\\Eryph\\genepool",
   "SecondDiskStorePath": "C:\\ProgramData\\Microsoft\\Windows\\Virtual Hard Disks\\Eryph-e2tests-2",
   "SecondVmStorePath": "C:\\ProgramData\\Microsoft\\Windows\\Hyper-V\\Eryph-e2etests-2",
-  "EryphPackerPath": "",
+  "EryphPackerPath": "D:\\git\\dotnet-genepoolclient\\src\\apps\\src\\eryph-packer\\bin\\Debug\\net8.0-windows\\win-x64",
   "EgsToolPath": "",
-  "ClientRuntimeModulePath": "",
-  "ComputeClientModulePath": "",
-  "IdentityClientModulePath": ""
+  "ClientRuntimeModulePath": "D:\\git\\dotnet-clientruntime\\src\\Eryph.ClientRuntime.Configuration.Commands\\bin\\Debug\\PsModule",
+  "ComputeClientModulePath": "D:\\git\\dotnet-computeclient\\src\\Eryph.ComputeClient.Commands\\bin\\Debug\\PsModule",
+  "IdentityClientModulePath": "D:\\git\\dotnet-identityclient\\src\\Eryph.IdentityClient.Commands\\bin\\Debug\\PsModule"
 }
