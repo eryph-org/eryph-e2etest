@@ -5,7 +5,6 @@
 #Requires -Module Pester
 #Requires -Module Assert
 
-Set-StrictMode -Version 3.0
 $PSNativeCommandUseErrorActionPreference = $true
 $ErrorActionPreference = 'Stop'
 
@@ -54,10 +53,15 @@ $service | Should -HaveCount 0
 $driver = Get-WindowsDriver -Online | Where-Object { $_.OriginalFileName -ilike "*dbo_ovse*" }
 $driver | Should -HaveCount 0
 
+# Verify that the OVS bridges have been removed
+$networkAdapters = Get-NetAdapter -IncludeHidden
+$null = $networkAdapters | Assert-All { $_.Name -ine "br-nat" }
+$null = $networkAdapters | Assert-All { $_.Name -ine "br-int" } 
+
 $rootCertificates = Get-Item Cert:\LocalMachine\Root\* | Where-Object { $_.Issuer -ilike "*eryph*" }
 $rootCertificates | Should -HaveCount 0
 $myCertificates = Get-Item Cert:\LocalMachine\My\* | Where-Object { $_.Issuer -ilike "*eryph*" }
 $myCertificates | Should -HaveCount 0
 
-Get-VM | Assert-All { $_.Name -ne $catletName }
+$null = Get-VM | Assert-All { $_.Name -ne $catletName }
 $disk.Path | Should -Not -Exist

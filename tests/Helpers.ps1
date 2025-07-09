@@ -20,7 +20,6 @@ function Connect-Catlet {
     $WaitForCloudInit
   )
 
-  Set-StrictMode -Version 3.0
   $PSNativeCommandUseErrorActionPreference = $true
   $ErrorActionPreference = 'Stop'
 
@@ -53,7 +52,6 @@ function Connect-CatletIp {
     $WaitForCloudInit
   )
 
-  Set-StrictMode -Version 3.0
   $PSNativeCommandUseErrorActionPreference = $true
   $ErrorActionPreference = 'Stop'
   
@@ -128,7 +126,6 @@ function Wait-Assert {
     $Interval = (New-TimeSpan -Seconds 5)
   )
 
-  Set-StrictMode -Version 3.0
   $PSNativeCommandUseErrorActionPreference = $true
   $ErrorActionPreference = 'Stop'
 
@@ -163,7 +160,6 @@ function Setup-Gene {
     $GeneSetTag
   )
 
-  Set-StrictMode -Version 3.0
   $PSNativeCommandUseErrorActionPreference = $true
   $ErrorActionPreference = 'Stop'
 
@@ -197,7 +193,6 @@ function Setup-Gene {
 
 function Setup-GenePool {
 
-  Set-StrictMode -Version 3.0
   $PSNativeCommandUseErrorActionPreference = $true
   $ErrorActionPreference = 'Stop'
 
