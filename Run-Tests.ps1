@@ -40,6 +40,9 @@ Get-Module -Name Eryph.ComputeClient | Format-List
 Write-Output "The following identity client is used"
 Get-Module -Name Eryph.IdentityClient | Format-List
 
+Write-Output "Initialize guest services..."
+egs-tool initialize
+
 Write-Output "Running tests..."
 $pesterConfig = New-PesterConfiguration
 $pesterConfig.Output.Verbosity = 'Detailed'
