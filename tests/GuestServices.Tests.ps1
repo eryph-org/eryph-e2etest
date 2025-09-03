@@ -15,7 +15,8 @@ Describe "GuestServices" {
 
     # Without the additional processing, Powershell introduces random
     # linebreaks as the string longer than the console is wide.
-    $egsSshKey = (egs-tool get-ssh-key | Out-String -Stream) -join ''
+    # $egsSshKey = (egs-tool get-ssh-key | Out-String -Stream) -join ''
+    $egsSshKey = egs-tool get-ssh-key
     if ($LASTEXITCODE -ne 0) {
       throw 'Could not get SSH key for guest services. Have you initialized the guest services?'
     }
