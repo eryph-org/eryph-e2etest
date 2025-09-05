@@ -1,0 +1,22 @@
+name: win-install
+
+variables:
+  - name: sshPublicKey
+
+fodder:
+- name: write-ssh-key
+  type: cloud-config
+  content:
+    write_files:
+      - path: C:\ProgramData\eryph\guest-services\id_egs.pub
+        content: '{{ sshPublicKey }}'
+
+- name: install-egs
+  type: shellscript
+  fileName: Install-Egs.ps1
+  content: |
+    #ps1_sysnative
+    $ErrorActionPreference = 'Stop'
+    Set-StrictMode -Version 3.0
+
+    & D:\install.ps1

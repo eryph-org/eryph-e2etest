@@ -111,10 +111,15 @@ jobs:
     artifact: packer
     patterns: '**/*.zip'
   - download: guest-services
-    name: DownloadGuestServices
-    displayName: Download guest servicess
+    name: DownloadGuestServicesTool
+    displayName: Download guest services tool
     artifact: tool
     patterns: '**/*.zip'
+  - download: guest-services
+    name: DownloadGuestServicesIso
+    displayName: Download guest services ISO
+    artifact: guest-iso
+    patterns: '**/*.iso'
   - download: client-runtime
     name: DownloadClientRuntime
     displayName: Download client runtime
@@ -198,6 +203,7 @@ jobs:
     env:
       E2E_ERYPH_PACKER_PATH: $(Pipeline.Workspace)/packer/packer/packer/bin
       E2E_EGS_TOOL_PATH: $(Pipeline.Workspace)/guest-services/tool/egs-tool
+      E2E_EGS_ISO_BASEPATH: $(Pipeline.Workspace)/guest-services/guest-iso
       E2E_CLIENT_RUNTIME_MODULE_PATH: $(Pipeline.Workspace)/client-runtime/cmdlet
       E2E_COMPUTE_CLIENT_MODULE_PATH: $(Pipeline.Workspace)/compute-client/cmdlet
       E2E_IDENTITY_CLIENT_MODULE_PATH: $(Pipeline.Workspace)/identity-client/cmdlet

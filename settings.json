@@ -6,6 +6,7 @@
   "SecondVmStorePath": "C:\\ProgramData\\Microsoft\\Windows\\Hyper-V\\Eryph-e2etests-2",
   "EryphPackerPath": "D:\\git\\dotnet-genepoolclient\\src\\apps\\src\\eryph-packer\\bin\\Debug\\net8.0-windows\\win-x64",
   "EgsToolPath": "D:\\git\\guest-services\\src\\Eryph.GuestServices.Tool\\bin\\Debug\\net8.0-windows\\win-x64",
+  "EgsIsoPath": "D:\\egs_0.1.0-PullRequest0014.24.iso",
   "ClientRuntimeModulePath": "D:\\git\\dotnet-clientruntime\\src\\Eryph.ClientRuntime.Configuration.Commands\\bin\\Debug\\PsModule",
   "ComputeClientModulePath": "D:\\git\\dotnet-computeclient\\src\\Eryph.ComputeClient.Commands\\bin\\Debug\\PsModule",
   "IdentityClientModulePath": "D:\\git\\dotnet-identityclient\\src\\Eryph.IdentityClient.Commands\\bin\\Debug\\PsModule"
