@@ -14,7 +14,7 @@ Describe "Catlets" {
     $catletName = New-CatletName
   }
 
-    Context "Inventory" {
+  Context "Inventory" {
     It "Updates inventory when catlet is changed in Hyper-V" {
       $config = @"
 name: $catletName

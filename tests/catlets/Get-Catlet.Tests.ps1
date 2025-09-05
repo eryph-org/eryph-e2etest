@@ -14,7 +14,8 @@ Describe "Catlets" {
     $catletName = New-CatletName
   }
 
-    Context "Get-Catlet" {
+  Context "Get-Catlet" {
+    
     It "Returns the catlet configuration with capabilities" {
       $config = @'
 capabilities:
@@ -51,6 +52,7 @@ capabilities:
       $catletConfig = Get-Catlet -Id $catlet.Id -Config
       $catletConfig | Should -BeLikeExactly $expectedConfig
     }
+
   }
 
   AfterEach {

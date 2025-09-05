@@ -15,6 +15,7 @@ Describe "Catlets" {
   }
 
   Context "Stop-Catlet" {
+
     It "Stops VM process if Hyper-V cannot stop the VM" {
       # The config defines a systemd unit that takes 5 minutes to stop
       # and hence blocks the shutdown of the VM. This also blocks all
@@ -79,6 +80,7 @@ fodder:
       $vm = Get-VM -Name $catletName
       $vm.State | Should -Be Off 
     }
+    
   }
 
   AfterEach {

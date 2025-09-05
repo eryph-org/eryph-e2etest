@@ -359,6 +359,7 @@ fodder:
       { New-Catlet -Name $catletName -ProjectName $project.Name -Config $config } |
         Should -Throw "*The gene set 'dbosoft/e2etests-fodder' is used with different tags ('0.2', '0.1')*"
     }
+    
   }
   
   AfterEach {

@@ -14,7 +14,8 @@ Describe "Catlets" {
     $catletName = New-CatletName
   }
 
-    Context "Test-Catlet" {
+  Context "Test-Catlet" {
+
     It "Quickly validates catlet configuration and returns errors" {
       $config = @'
 name: invalid$name
@@ -204,6 +205,7 @@ fodder:
 
 "@
     }
+    
   }
 
   AfterEach {

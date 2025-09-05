@@ -14,7 +14,8 @@ Describe "Catlets" {
     $catletName = New-CatletName
   }
 
-    Context "Networking" {
+  Context "Networking" {
+
     It "Connects two catlets in the same project" {
       # This test uses a special base catlet which is still based on Ubuntu 22.04.
       # The DNS resolution for local hostnames is broken with Ubuntu 24.04. OVN
@@ -125,6 +126,7 @@ networks:
       # sent on the same interface as the request was received.
       # At some point, this test should use multiple network providers.
     }
+    
   }
   
   AfterEach {

@@ -14,7 +14,7 @@ Describe "Catlets" {
     $catletName = New-CatletName
   }
   
-    Context "Update-Catlet" {
+  Context "Update-Catlet" {
     # When updating a catlet, the name and project must be specified
     # in the config. Otherwise, eryph assumes the default values and
     # moves and renames the catlet.
@@ -151,6 +151,7 @@ drives:
       # Disk size should not change as the disks are skipped when a checkpoint exists
       $vhd.Size | Should -BeExactly 100GB
     }
+    
   }
 
   AfterEach {
