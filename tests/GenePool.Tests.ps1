@@ -41,11 +41,11 @@ fodder:
       # Catlet genes can always be removed as they are not needed after the catlet has been created.
       Remove-CatletGene -Id $catletGene.Id -Force
       { Remove-CatletGene -Id $fodderGene1.Id -Force } |
-        Should -Throw "*The gene fodder gene:dbosoft/e2etests-fodder/0.1:greet-user (any) is in use.*"
+        Should -Throw '*The gene fodder::gene:dbosoft/e2etests-fodder/0.1:greet-user`[any]` is in use.*'
       { Remove-CatletGene -Id $fodderGene2.Id -Force } |
-        Should -Throw "*The gene fodder gene:dbosoft/e2etests-fodder/0.1:greet-architecture (hyperv/amd64) is in use.*"
+        Should -Throw '*The gene fodder::gene:dbosoft/e2etests-fodder/0.1:greet-architecture`[hyperv/amd64`] is in use.*'
       { Remove-CatletGene -Id $volumeGene.Id -Force } |
-        Should -Throw "*The gene volume gene:dbosoft/e2etests-nullos/0.1:sda (any) is in use.*"
+        Should -Throw '*The gene volume::gene:dbosoft/e2etests-nullos/0.1:sda`[any`] is in use.*'
       
       $genes = Get-CatletGene
       $genes | Assert-All { $_.GeneSet -ine 'dbosoft/e2etests-nullos/0.1' -or $_.Name -ine 'catlet' }
