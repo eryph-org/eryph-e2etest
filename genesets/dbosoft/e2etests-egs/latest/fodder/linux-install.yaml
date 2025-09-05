@@ -1,0 +1,20 @@
+name: linux-install
+
+variables:
+  - name: sshPublicKey
+
+fodder:
+- name: write-ssh-key
+  type: cloud-config
+  content:
+    write_files:
+      - path: /etc/opt/eryph/guest-services/id_egs.pub
+        content: '{{ sshPublicKey }}'
+
+- name: install-egs
+  type: shellscript
+  content: |
+      #!/bin/bash
+      mkdir /mnt/egs
+      mount /dev/sr0 /mnt/egs
+      /mnt/egs/install.sh

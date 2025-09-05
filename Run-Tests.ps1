@@ -20,6 +20,10 @@ Write-Output "EryphZeroPath: $($EryphSettings.EryphZeroPath)"
 Write-Output "E2E_ERYPH_ZERO_PATH: $($env:E2E_ERYPH_ZERO_PATH)"
 Write-Output "EryphPackerPath: $($EryphSettings.EryphPackerPath)"
 Write-Output "E2E_ERYPH_PACKER_PATH: $($env:E2E_ERYPH_PACKER_PATH)"
+Write-Output "EgsToolPath: $($EryphSettings.EgsToolPath)"
+Write-Output "E2E_EGS_TOOL_PATH: $($env:E2E_EGS_TOOL_PATH)"
+Write-Output "EgsIsoPath: $($EryphSettings.EgsIsoPath)"
+Write-Output "E2E_EGS_ISO_BASEPATH: $($env:E2E_EGS_ISO_BASEPATH)"
 Write-Output "ClientRuntimeModulePath: $($EryphSettings.ClientRuntimeModulePath)"
 Write-Output "E2E_CLIENT_RUNTIME_MODULE_PATH: $($env:E2E_CLIENT_RUNTIME_MODULE_PATH)"
 Write-Output "ComputeClientModulePath: $($EryphSettings.ComputeClientModulePath)"
@@ -37,6 +41,9 @@ Get-Module -Name Eryph.ComputeClient | Format-List
 
 Write-Output "The following identity client is used"
 Get-Module -Name Eryph.IdentityClient | Format-List
+
+Write-Output "Initialize guest services..."
+egs-tool initialize
 
 Write-Output "Running tests..."
 $pesterConfig = New-PesterConfiguration

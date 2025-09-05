@@ -6,6 +6,11 @@ $ErrorActionPreference = 'Stop'
 $EryphSettings = Get-Content -Raw -Path (Join-Path $PSScriptRoot "settings.json") `
 | ConvertFrom-Json -AsHashtable
 
+# We do not know the exact name of the ISO as it contains the version.
+if (-not $EryphSettings.EgsIsoPath -and $env:E2E_EGS_ISO_BASEPATH) {
+  $EryphSettings.EgsIsoPath = (Resolve-Path (Join-Path $env:E2E_EGS_ISO_BASEPATH "*.iso")).Path
+}
+
 if ($EryphSettings.EryphZeroPath) {
   $env:Path = "$($EryphSettings.EryphZeroPath);$($env:Path)"
 }
@@ -20,6 +25,14 @@ if ($EryphSettings.EryphPackerPath) {
 
 if ($env:E2E_ERYPH_PACKER_PATH) {
   $env:Path = "$($env:E2E_ERYPH_PACKER_PATH);$($env:Path)"
+}
+
+if ($EryphSettings.EgsToolPath) {
+  $env:Path = "$($EryphSettings.EgsToolPath);$($env:Path)"
+}
+
+if ($env:E2E_EGS_TOOL_PATH) {
+  $env:Path = "$($env:E2E_EGS_TOOL_PATH);$($env:Path)"
 }
 
 if ($EryphSettings.ClientRuntimeModulePath) {

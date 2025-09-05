@@ -150,7 +150,7 @@ function New-TestProject {
 }
 
 function New-CatletName {
-  "catlet-$(Get-Date -Format 'yyyyMMddHHmmss')"
+  "clt$(Get-Date -Format 'yyMMddHHmmss')"
 }
 
 function Setup-Gene {

@@ -8,16 +8,18 @@ pr: none
 
 resources:
   pipelines:
-   - pipeline: eryph
-     source: eryph-org.eryph
-   - pipeline: packer
-     source: eryph-org.dotnet-genepoolclient
-   - pipeline: client-runtime
-     source: eryph-org.dotnet-clientruntime
-   - pipeline: compute-client
-     source: eryph-org.dotnet-computeclient
-   - pipeline: identity-client
-     source: eryph-org.dotnet-identityclient
+  - pipeline: eryph
+    source: eryph-org.eryph
+  - pipeline: packer
+    source: eryph-org.dotnet-genepoolclient
+  - pipeline: guest-services
+    source: eryph-org.guest-services
+  - pipeline: client-runtime
+    source: eryph-org.dotnet-clientruntime
+  - pipeline: compute-client
+    source: eryph-org.dotnet-computeclient
+  - pipeline: identity-client
+    source: eryph-org.dotnet-identityclient
 
 jobs:
 - job: SpinUp
@@ -108,6 +110,16 @@ jobs:
     displayName: Download eryph-packer
     artifact: packer
     patterns: '**/*.zip'
+  - download: guest-services
+    name: DownloadGuestServicesTool
+    displayName: Download guest services tool
+    artifact: tool
+    patterns: '**/*.zip'
+  - download: guest-services
+    name: DownloadGuestServicesIso
+    displayName: Download guest services ISO
+    artifact: guest-iso
+    patterns: '**/*.iso'
   - download: client-runtime
     name: DownloadClientRuntime
     displayName: Download client runtime
@@ -144,6 +156,13 @@ jobs:
     inputs: 
       archiveFilePatterns: $(Pipeline.Workspace)/packer/packer/*.zip
       destinationFolder: $(Pipeline.Workspace)/packer/packer/packer
+  
+  - task: ExtractFiles@1
+    name: ExtractGuestServices
+    displayName: Extract egs-tool
+    inputs: 
+      archiveFilePatterns: $(Pipeline.Workspace)/guest-services/tool/*.zip
+      destinationFolder: $(Pipeline.Workspace)/guest-services/tool/egs-tool
 
   - task: PowerShell@2
     name: SetEnvironmentVariables
@@ -183,6 +202,8 @@ jobs:
         .\Run-Tests.ps1
     env:
       E2E_ERYPH_PACKER_PATH: $(Pipeline.Workspace)/packer/packer/packer/bin
+      E2E_EGS_TOOL_PATH: $(Pipeline.Workspace)/guest-services/tool/egs-tool/bin
+      E2E_EGS_ISO_BASEPATH: $(Pipeline.Workspace)/guest-services/guest-iso
       E2E_CLIENT_RUNTIME_MODULE_PATH: $(Pipeline.Workspace)/client-runtime/cmdlet
       E2E_COMPUTE_CLIENT_MODULE_PATH: $(Pipeline.Workspace)/compute-client/cmdlet
       E2E_IDENTITY_CLIENT_MODULE_PATH: $(Pipeline.Workspace)/identity-client/cmdlet
