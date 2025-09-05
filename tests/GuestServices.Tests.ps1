@@ -51,7 +51,6 @@ fodder:
     $result | Should -Be $catletName
   }
 
-
   It "Can connect to a Windows guest" {
     $config = @"
 name: default
