@@ -202,7 +202,7 @@ jobs:
         .\Run-Tests.ps1
     env:
       E2E_ERYPH_PACKER_PATH: $(Pipeline.Workspace)/packer/packer/packer/bin
-      E2E_EGS_TOOL_PATH: $(Pipeline.Workspace)/guest-services/tool/egs-tool
+      E2E_EGS_TOOL_PATH: $(Pipeline.Workspace)/guest-services/tool/egs-tool/bin
       E2E_EGS_ISO_BASEPATH: $(Pipeline.Workspace)/guest-services/guest-iso
       E2E_CLIENT_RUNTIME_MODULE_PATH: $(Pipeline.Workspace)/client-runtime/cmdlet
       E2E_COMPUTE_CLIENT_MODULE_PATH: $(Pipeline.Workspace)/compute-client/cmdlet
