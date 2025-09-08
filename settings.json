@@ -5,6 +5,8 @@
   "SecondDiskStorePath": "C:\\ProgramData\\Microsoft\\Windows\\Virtual Hard Disks\\Eryph-e2tests-2",
   "SecondVmStorePath": "C:\\ProgramData\\Microsoft\\Windows\\Hyper-V\\Eryph-e2etests-2",
   "EryphPackerPath": "",
+  "EgsToolPath": "",
+  "EgsIsoPath": "",
   "ClientRuntimeModulePath": "",
   "ComputeClientModulePath": "",
   "IdentityClientModulePath": ""
