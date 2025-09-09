@@ -9,6 +9,10 @@ BeforeAll {
 
 Describe "NetworkProviders" {
   BeforeAll {
+    # The powershell-yaml cmdlet must be invoked before the ComputeClient cmdlets
+    # to avoid a type conflict with YamlDotNet.
+    ConvertFrom-Yaml ""
+
     $flatSwitchName = 'eryph-e2etests-flat-switch'
     $flatSwitch = Get-VMSwitch -Name $flatSwitchName -ErrorAction SilentlyContinue
     if (-not $flatSwitch) {
@@ -256,8 +260,6 @@ networks:
       # which will not arrive as the flat network does not have a DHCP server.
 
       $catletConfig = @"
-name: $catletName
-project: $($project.Name)
 parent: dbosoft/e2etests-os/base
 network_adapters:
 - name: eth0
@@ -269,27 +271,16 @@ networks:
     ip_pool: second-pool
 "@
   
-      $catlet = New-Catlet -Config $catletConfig
+      $catlet = New-Catlet -Config $catletConfig -Name $catletName -ProjectName $project.Name
       $sshSession = Connect-Catlet -CatletId $catlet.Id -WaitForCloudInit
-  
-      $updatedCatletConfig = @"
-name: $catletName
-project: $($project.Name)
-parent: dbosoft/e2etests-os/base
-network_adapters:
-- name: eth0
-- name: eth1
-networks:
-- name: second-network
-  adapter_name: eth0
-  subnet_v4:
-    name: second-subnet
-    ip_pool: second-pool
-- name: flat-network
-  adapter_name: eth1
-"@
+      
+      $updateConfigYaml = Get-Catlet -Config -Id $catlet.Id
+      $updateConfig = ConvertFrom-Yaml $updateConfigYaml
+      $updateConfig.network_adapters = $updateConfig.network_adapters + @{ name = 'eth1' }
+      $updateConfig.networks = $updateConfig.networks + @{ name = 'flat-network'; adapter_name = 'eth1' }
+      $updateConfigYaml = ConvertTo-Yaml $updateConfig
 
-      Update-Catlet -Id $catlet.Id -Config $updatedCatletConfig
+      Update-Catlet -Id $catlet.Id -Config $updateConfigYaml
 
       $networkAdapters = Get-VMNetworkAdapter -VMName $catletName
       $networkAdapters | Should -HaveCount 2

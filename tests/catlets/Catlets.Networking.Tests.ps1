@@ -10,6 +10,10 @@ BeforeAll {
 Describe "Catlets" {
 
   BeforeEach {
+    # The powershell-yaml cmdlet must be invoked before the ComputeClient cmdlets
+    # to avoid a type conflict with YamlDotNet.
+    ConvertFrom-Yaml ""
+
     $project = New-TestProject
     $catletName = New-CatletName
   }
@@ -91,26 +95,21 @@ networks:
       Set-VNetwork -ProjectName $project.Name -Config $networkConfig -Force
 
       $config = @"
-name: $catletName
-project: $($project.Name)
 parent: dbosoft/e2etests-os/base
 networks:
 - name: default
 "@
 
-      $catlet = New-Catlet -Config $config
+      $catlet = New-Catlet -Config $config -Name $catletName -ProjectName $project.Name
       $sshSession = Connect-Catlet -CatletId $catlet.Id -WaitForCloudInit
 
-      $updatedConfig = @"
-name: $catletName
-project: $($project.Name)
-parent: dbosoft/e2etests-os/base
-networks:
-- name: default
-- name: second-network
-"@
-      Update-Catlet -Id $catlet.Id -Config $updatedConfig
+      $updateConfigYaml = Get-Catlet -Config -Id $catlet.Id
+      $updateConfig = ConvertFrom-Yaml $updateConfigYaml
+      $updateConfig.networks = $updateConfig.networks + @{ name = 'second-network' }
+      $updateConfigYaml = ConvertTo-Yaml $updateConfig
       
+      Update-Catlet -Id $catlet.Id -Config $updateConfigYaml
+
       $sshResponse = Invoke-SSHCommand -Command 'sudo dhcpcd --oneshot --debug --timeout 60 --waitip=4 eth1 2>&1' -SSHSession $sshSession
       $sshResponse.ExitStatus | Should -Be 0
       $sshResponse.Output -join "`n" | Should -BeLike "*adding IP address 10.0.1.100/24*"
