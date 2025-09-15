@@ -48,6 +48,9 @@ fodder:
     bcdedit /set testsigning on
 - source: gene:dbosoft/hyperv:install
 - source: gene:dbosoft/powershell/1.0:win-install
+  variables:
+  - name: pwshVersion
+    value: '7.5.2'
 - source: gene:dbosoft/vsts/2.0:agent-sp
   variables:
   - name: agentVersion
