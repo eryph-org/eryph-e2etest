@@ -1,5 +1,5 @@
 name : e2etests-runner
-parent: dbosoft/winsrv2022-standard/starter
+parent: dbosoft/winsrv2022-standard/20250702
 hostname: E2ERUNNER
 cpu:
   count: 4
@@ -33,6 +33,7 @@ variables:
   required: true
 
 fodder:
+- source: gene:dbosoft/starter-food:win-starter
 - name: remove-defender
   type: shellscript
   fileName: Remove-Defender.ps1
