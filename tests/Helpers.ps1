@@ -45,7 +45,7 @@ function Connect-CatletIp {
 
     [Parameter()]
     [timespan]
-    $Timeout = (New-TimeSpan -Minutes 10),
+    $Timeout = (New-TimeSpan -Minutes 120),
 
     [Parameter()]
     [switch]
