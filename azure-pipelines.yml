@@ -208,6 +208,14 @@ jobs:
       E2E_COMPUTE_CLIENT_MODULE_PATH: $(Pipeline.Workspace)/compute-client/cmdlet
       E2E_IDENTITY_CLIENT_MODULE_PATH: $(Pipeline.Workspace)/identity-client/cmdlet
 
+  - task: PublishTestResults@2
+    name: CollectTestResults
+    displayName: Collect test results
+    condition: true
+    inputs:
+      testResultsFormat: 'NUnit'
+      testResultsFiles: .\pesterResults.xml
+
   # Copy the logs as the data directory with the logs is removed during the uninstallation.
   # Also, the archive or publish task can fail when the log files are in use by another process,
   # e.g. because eryph has not been properly uninstalled.
