@@ -45,7 +45,7 @@ function Connect-CatletIp {
 
     [Parameter()]
     [timespan]
-    $Timeout = (New-TimeSpan -Minutes 120),
+    $Timeout = (New-TimeSpan -Minutes 10),
 
     [Parameter()]
     [switch]
@@ -54,7 +54,6 @@ function Connect-CatletIp {
 
   $PSNativeCommandUseErrorActionPreference = $true
   $ErrorActionPreference = 'Stop'
-  $InformationPreference = 'Continue'
   
   $cutOff = (Get-Date).Add($Timeout)
 
@@ -72,7 +71,6 @@ function Connect-CatletIp {
     try {
       $sshSession = New-SSHSession -ComputerName $IpAddress -Credential $credentials -AcceptKey
     } catch {
-      Write-Information "Failed to establish SSH session: $($_)"
       if ((Get-Date) -gt $cutOff) {
         throw 'Failed to establish an SSH session within the timeout'
       }

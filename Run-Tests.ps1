@@ -2,7 +2,6 @@
 
 $PSNativeCommandUseErrorActionPreference = $true
 $ErrorActionPreference = 'Stop'
-$InformationPreference = 'Continue'
 
 Write-Output "Going to run eryph end-to-end tests"
 

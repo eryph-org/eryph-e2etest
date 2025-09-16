@@ -1,5 +1,5 @@
 name : e2etests-runner
-parent: dbosoft/winsrv2022-standard/20250702
+parent: dbosoft/winsrv2022-standard/starter
 hostname: E2ERUNNER
 cpu:
   count: 4
@@ -33,7 +33,6 @@ variables:
   required: true
 
 fodder:
-- source: gene:dbosoft/starter-food:win-starter
 - name: remove-defender
   type: shellscript
   fileName: Remove-Defender.ps1
@@ -48,9 +47,6 @@ fodder:
     bcdedit /set testsigning on
 - source: gene:dbosoft/hyperv:install
 - source: gene:dbosoft/powershell/1.0:win-install
-  variables:
-  - name: pwshVersion
-    value: '7.5.2'
 - source: gene:dbosoft/vsts/2.0:agent-sp
   variables:
   - name: agentVersion
