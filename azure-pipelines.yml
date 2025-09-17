@@ -214,7 +214,6 @@ jobs:
     condition: true
     inputs:
       testResultsFormat: 'NUnit'
-      testResultsFiles: .\pesterResults.xml
 
   # Copy the logs as the data directory with the logs is removed during the uninstallation.
   # Also, the archive or publish task can fail when the log files are in use by another process,

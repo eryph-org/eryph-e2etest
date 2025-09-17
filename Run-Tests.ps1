@@ -52,5 +52,5 @@ $pesterConfig.Run.Exit = $True
 $pesterConfig.Run.Path = "$PSScriptRoot/tests"
 $pesterConfig.TestResult.Enabled = $True
 $pesterConfig.TestResult.OutputFormat = 'NUnit3'
-$pesterConfig.TestResult.OutputPath = '$PSScriptRoot/pesterResults.xml'
+$pesterConfig.TestResult.OutputPath = '$PSScriptRoot/TEST-pesterResults.xml'
 Invoke-Pester -Configuration $pesterConfig
