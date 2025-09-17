@@ -30,7 +30,7 @@ parent: dbosoft/e2etests-os/base
 drives:
 - name: egsiso
   source: $($EryphSettings.EgsIsoPath)
-  type: DVD
+  type: dvd
 fodder:
 - source: gene:dbosoft/e2etests-egs:linux-install
   variables:
@@ -58,7 +58,7 @@ parent: dbosoft/winsrv2022-standard/starter
 drives:
 - name: egsiso
   source: $($EryphSettings.EgsIsoPath)
-  type: DVD
+  type: dvd
 fodder:
 - source: gene:dbosoft/e2etests-egs:win-install
   variables:

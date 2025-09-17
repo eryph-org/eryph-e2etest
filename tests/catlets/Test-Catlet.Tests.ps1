@@ -30,6 +30,7 @@ name: invalid$name
     It "Expands configuration for new catlet" {
       $config = @"
 name: $catletName
+project: $($project.Name)
 variables:
 - name: userName
   required: true
@@ -49,25 +50,33 @@ fodder:
       $result = Test-Catlet -Config $config -Variables @{ userName = "Eve" } -SkipVariablesPrompt
 
       $result | Should -Be @"
+config_type: specification
+project: $($project.Name)
 name: $catletName
+hostname: $catletName
+environment: default
+store: default
 cpu:
   count: 1
 memory:
   startup: 1024
+network_adapters:
+- name: eth0
 networks:
 - name: default
   adapter_name: eth0
 variables:
 - name: userName
+  type: string
   value: Eve
   required: true
 - name: catletId
-  type: String
+  type: string
   value: '#catletId'
   secret: false
   required: false
 - name: vmId
-  type: String
+  type: string
   value: '#vmId'
   secret: false
   required: false
@@ -92,7 +101,12 @@ fodder:
       $result = Test-Catlet -Name $catletName -Parent 'dbosoft/e2etests-os/base' -SkipVariablesPrompt
 
       $result | Should -Be @"
+config_type: specification
+project: default
 name: $catletName
+hostname: $catletName
+environment: default
+store: default
 parent: dbosoft/e2etests-os/base-0.1
 cpu:
   count: 2
@@ -100,7 +114,9 @@ memory:
   startup: 512
 drives:
 - name: sda
+  store: default
   source: gene:dbosoft/ubuntu-24.04/20241217:sda
+  type: vhd
 network_adapters:
 - name: eth0
 capabilities:
@@ -112,19 +128,21 @@ networks:
   adapter_name: eth0
 variables:
 - name: e2ePassword
+  type: string
   value: '#REDACTED'
   secret: true
   required: true
 - name: e2eUser
+  type: string
   value: e2e
   required: true
 - name: catletId
-  type: String
+  type: string
   value: '#catletId'
   secret: false
   required: false
 - name: vmId
-  type: String
+  type: string
   value: '#vmId'
   secret: false
   required: false
@@ -139,73 +157,7 @@ fodder:
 "@
 
     }
-
-    It "Expands configuration for existing catlet" {
-      $config = @"
-name: $catletName
-project: $($project.Name)
-variables:
-- name: userName
-  required: true
-fodder:
-- name: add-user-greeting
-  type: shellscript
-  content: |
-    #!/bin/bash
-    echo 'Hello {{ userName }}!' >> hello-world.txt
-- name: write-vm-id
-  type: shellscript
-  content: |
-    #!/bin/bash
-    echo '{{ vmId }}' >> hyperv-vm-id.txt
-"@
-
-      $catlet = New-Catlet -Config $config -Variables @{ userName = "Eve" } -SkipVariablesPrompt
-      $vm =  Get-VM $catletName
-
-      $result = Test-Catlet -Config $config -Id $catlet.Id
-
-      $result | Should -Be @"
-project: $($project.Name)
-name: $catletName
-cpu:
-  count: 1
-memory:
-  startup: 1024
-networks:
-- name: default
-  adapter_name: eth0
-variables:
-- name: userName
-  value: Eve
-  required: true
-- name: catletId
-  type: String
-  value: $($catlet.Id)
-  secret: false
-  required: false
-- name: vmId
-  type: String
-  value: $($vm.Id)
-  secret: false
-  required: false
-fodder:
-- name: add-user-greeting
-  type: shellscript
-  content: |
-    #!/bin/bash
-    echo 'Hello Eve!' >> hello-world.txt
-  secret: false
-- name: write-vm-id
-  type: shellscript
-  content: |-
-    #!/bin/bash
-    echo '$($vm.Id)' >> hyperv-vm-id.txt
-  secret: false
-
-"@
-    }
-    
+  
   }
 
   AfterEach {

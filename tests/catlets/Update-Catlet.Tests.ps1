@@ -10,6 +10,10 @@ BeforeAll {
 Describe "Catlets" {
 
   BeforeEach {
+    # The powershell-yaml cmdlet must be invoked before the ComputeClient cmdlets
+    # to avoid a type conflict with YamlDotNet.
+    ConvertFrom-Yaml ""
+    
     $project = New-TestProject
     $catletName = New-CatletName
   }
@@ -19,62 +23,40 @@ Describe "Catlets" {
     # in the config. Otherwise, eryph assumes the default values and
     # moves and renames the catlet.
 
-    It "Updates catlet when parent is not changed" {
+    It "Updates catlet" {
       $config = @"
-name: $catletName
-project: $($project.Name)
 parent: dbosoft/e2etests-os/base
 cpu:
   count: 2
+memory:
+  startup: 1024
+drives:
+- name: sda
+  size: 100
 "@
 
-      $catlet = New-Catlet -Config $config
+      $catlet = New-Catlet -Config $config -Name $catletName -ProjectName $project.Name
+      
+      $updateConfigYaml = Get-Catlet -Config -Id $catlet.Id
+      $updateConfig = ConvertFrom-Yaml $updateConfigYaml
+      $updateConfig.cpu.count = 3
+      $updateConfig.memory.startup = 2048
+      $updateConfig.drives[0].size = 150
+      $updateConfigYaml = ConvertTo-Yaml $updateConfig
 
-      $updatedConfig = @"
-name: $catletName
-project: $($project.Name)
-parent: dbosoft/e2etests-os/base
-cpu:
-  count: 3
-"@
-      Update-Catlet -Id $catlet.Id -Config $updatedConfig
+      Update-Catlet -Id $catlet.Id -Config $updateConfigYaml
 
       $vm = Get-VM -Name $catletName
       $vm.ProcessorCount | Should -BeExactly 3
-    }
-
-    It "Updates catlet even when required variables are not specified" {
-      $config = @"
-name: $catletName
-project: $($project.Name)
-parent: dbosoft/e2etests-os/base
-memory:
-  startup: 1024
-variables:
-- name: userName
-  required: true
-fodder: 
-- name: add-user-greeting
-  type: shellscript
-  content: |
-    #!/bin/bash
-    echo 'Hello {{ userName }}!' >> hello-world.txt
-"@
-
-      $catlet = New-Catlet -Config $config -Variables @{ userName = "Eve" }
-
-      $updateConfig = $config.Replace('startup: 1024', 'startup: 2048')
-
-      Update-Catlet -Id $catlet.Id -Config $updateConfig
-
-      $vm = Get-VM -Name $catletName
       $vm.MemoryStartup | Should -BeExactly 2048MB
+      $vm.HardDrives | Should -HaveCount 1
+      $vhd = Get-VHD -Path $vm.HardDrives[0].Path
+      # Disk size should not change as the disks are skipped when a checkpoint exists
+      $vhd.Size | Should -BeExactly 150GB
     }
 
     It "Disables previously enabled capabilities" {
       $config = @"
-name: $catletName
-project: $($project.Name)
 capabilities:
 - name: dynamic_memory
 - name: nested_virtualization
@@ -84,7 +66,7 @@ capabilities:
 - name: tpm
 "@
 
-      $catlet = New-Catlet -Config $config
+      $catlet = New-Catlet -Config $config -Name $catletName -ProjectName $project.Name
 
       $vm = Get-VM -Name $catletName
       $vm.DynamicMemoryEnabled | Should -BeTrue
@@ -98,11 +80,17 @@ capabilities:
       $vmProcessor = Get-VMProcessor -VMName $catletName
       $vmProcessor.ExposeVirtualizationExtensions | Should -BeTrue
 
-      $updateConfig = @"
-name: $catletName
-project: $($project.Name)
-"@
-      Update-Catlet -Id $catlet.Id -Config $updateConfig
+      $updateConfigYaml = Get-Catlet -Config -Id $catlet.Id
+      $updateConfig = ConvertFrom-Yaml $updateConfigYaml
+      $updateConfig.capabilities = $null
+      # eryph should and will keep the dynamic memory enabled
+      # when a minimum or maximum value is provided. When the
+      # catlet was created, the Hyper-V default values were applied.
+      $updateConfig.memory.minimum = $null
+      $updateConfig.memory.maximum = $null
+      $updateConfigYaml = ConvertTo-Yaml $updateConfig
+
+      Update-Catlet -Id $catlet.Id -Config $updateConfigYaml
 
       $vm = Get-VM -Name $catletName
       $vm.DynamicMemoryEnabled | Should -BeFalse
@@ -119,8 +107,6 @@ project: $($project.Name)
 
     It "Updates catlet with checkpoint but does not change disks" {
       $config = @"
-name: $catletName
-project: $($project.Name)
 parent: dbosoft/e2etests-os/base
 cpu:
   count: 2
@@ -129,20 +115,16 @@ drives:
   size: 100
 "@
 
-      $catlet = New-Catlet -Config $config
+      $catlet = New-Catlet -Config $config -Name $catletName -ProjectName $project.Name
       Checkpoint-VM -Name $catlet.Name
 
-      $updatedConfig = @"
-name: $catletName
-project: $($project.Name)
-parent: dbosoft/e2etests-os/base
-cpu:
-  count: 3
-drives:
-- name: sda
-  size: 150
-"@
-      Update-Catlet -Id $catlet.Id -Config $updatedConfig
+      $updateConfigYaml = Get-Catlet -Config -Id $catlet.Id
+      $updateConfig = ConvertFrom-Yaml $updateConfigYaml
+      $updateConfig.cpu.count = 3
+      $updateConfig.drives[0].size = 150
+      $updateConfigYaml = ConvertTo-Yaml $updateConfig
+
+      Update-Catlet -Id $catlet.Id -Config $updateConfigYaml
 
       $vm = Get-VM -Name $catletName
       $vm.ProcessorCount | Should -BeExactly 3
