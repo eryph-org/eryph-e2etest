@@ -32,7 +32,7 @@ Describe "ProjectMembers" {
   }
 
   AfterEach {
-    Remove-EryphClient -Id $client.Id
+    Remove-EryphClient -Id $client.Id -Force
     Remove-EryphProject -Id $project.Id -Force
   }
 }
