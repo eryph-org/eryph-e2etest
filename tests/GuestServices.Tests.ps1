@@ -44,7 +44,9 @@ fodder:
     egs-tool update-ssh-config
 
     Wait-Assert -Timeout (New-TimeSpan -Minutes 10) {
-      egs-tool get-status $catlet.VmId | Should -Be 'available'
+      $info = egs-tool get-info --json $catlet.VmId | ConvertFrom-Json -AsHashtable
+      $info.status | Should -Be 'available'
+      $info.version | Should -Be $EryphSettings.EgsVersion
     }
 
     $result = &ssh -q "$($catlet.Name).$($project.Name).eryph.alt" 'hostname'
@@ -71,7 +73,9 @@ fodder:
     egs-tool update-ssh-config
 
     Wait-Assert -Timeout (New-TimeSpan -Minutes 10) {
-      egs-tool get-status $catlet.VmId | Should -Be 'available'
+      $info = egs-tool get-info --json $catlet.VmId | ConvertFrom-Json -AsHashtable
+      $info.status | Should -Be 'available'
+      $info.version | Should -Be $EryphSettings.EgsVersion
     }
 
     $result = &ssh -q "$($catlet.Name).$($project.Name).eryph.alt" 'hostname'
@@ -79,6 +83,6 @@ fodder:
   }
 
   AfterEach {
-    Remove-EryphProject -Id $project.Id -Force
+    # Remove-EryphProject -Id $project.Id -Force
   }
 }
