@@ -115,7 +115,7 @@ memory:
 drives:
 - name: sda
   store: default
-  source: gene:dbosoft/ubuntu-24.04/20241217:sda
+  source: gene:dbosoft/ubuntu-24.04/20250913:sda
   type: vhd
 network_adapters:
 - name: eth0

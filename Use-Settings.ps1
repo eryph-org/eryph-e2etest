@@ -11,6 +11,10 @@ if (-not $EryphSettings.EgsIsoPath -and $env:E2E_EGS_ISO_BASEPATH) {
   $EryphSettings.EgsIsoPath = (Resolve-Path (Join-Path $env:E2E_EGS_ISO_BASEPATH "*.iso")).Path
 }
 
+if ($EryphSettings.EgsIsoPath -match "egs_([\w.-]+).iso") {
+  $EryphSettings.EgsVersion = $matches[1]
+}
+
 if ($EryphSettings.EryphZeroPath) {
   $env:Path = "$($EryphSettings.EryphZeroPath);$($env:Path)"
 }
