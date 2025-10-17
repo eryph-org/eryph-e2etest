@@ -46,7 +46,8 @@ fodder:
     Wait-Assert -Timeout (New-TimeSpan -Minutes 10) {
       $info = egs-tool get-info --json $catlet.VmId | ConvertFrom-Json -AsHashtable
       $info.status | Should -Be 'available'
-      $info.version | Should -Be $EryphSettings.EgsVersion
+      $data = egs-tool get-data --json $catlet.VmId | ConvertFrom-Json -AsHashtable
+      $data.guest.'eryph:guest-services:version' | Should -Be $EryphSettings.EgsVersion
     }
 
     $result = &ssh -q "$($catlet.Name).$($project.Name).eryph.alt" 'hostname'
@@ -75,7 +76,8 @@ fodder:
     Wait-Assert -Timeout (New-TimeSpan -Minutes 10) {
       $info = egs-tool get-info --json $catlet.VmId | ConvertFrom-Json -AsHashtable
       $info.status | Should -Be 'available'
-      $info.version | Should -Be $EryphSettings.EgsVersion
+      $data = egs-tool get-data --json $catlet.VmId | ConvertFrom-Json -AsHashtable
+      $data.guest.'eryph:guest-services:version' | Should -Be $EryphSettings.EgsVersion
     }
 
     $result = &ssh -q "$($catlet.Name).$($project.Name).eryph.alt" 'hostname'
