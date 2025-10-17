@@ -44,8 +44,7 @@ fodder:
     egs-tool update-ssh-config
 
     Wait-Assert -Timeout (New-TimeSpan -Minutes 10) {
-      $info = egs-tool get-info --json $catlet.VmId | ConvertFrom-Json -AsHashtable
-      $info.status | Should -Be 'available'
+      egs-tool get-status $catlet.VmId | Should -Be 'available'
       $data = egs-tool get-data --json $catlet.VmId | ConvertFrom-Json -AsHashtable
       $data.guest.'eryph:guest-services:version' | Should -Be $EryphSettings.EgsVersion
     }
@@ -74,8 +73,7 @@ fodder:
     egs-tool update-ssh-config
 
     Wait-Assert -Timeout (New-TimeSpan -Minutes 10) {
-      $info = egs-tool get-info --json $catlet.VmId | ConvertFrom-Json -AsHashtable
-      $info.status | Should -Be 'available'
+      egs-tool get-status $catlet.VmId | Should -Be 'available'
       $data = egs-tool get-data --json $catlet.VmId | ConvertFrom-Json -AsHashtable
       $data.guest.'eryph:guest-services:version' | Should -Be $EryphSettings.EgsVersion
     }
