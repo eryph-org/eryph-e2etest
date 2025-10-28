@@ -29,6 +29,39 @@ name: $specificationName
       $specifications = Get-CatletSpecification -ProjectName $project.Name
       $specifications | Should -HaveCount 0
     }
+
+    It "Removes catlet specification which is deployed" {
+      $config = @"
+name: $specificationName
+"@
+
+      $specification = New-CatletSpecification -Comment 'first version' -ProjectName $project.Name -Config $config
+      $versions = Get-CatletSpecificationVersion -SpecificationId $specification.Id
+      $versions | Should -HaveCount 1
+
+      Deploy-Catlet -SpecificationId $specification.Id -SpecificationVersionId $specification.Latest.Id
+
+      Remove-CatletSpecification -Id $specification.Id -RemoveCatlet -Force
+      $specifications = Get-CatletSpecification -ProjectName $project.Name
+      $specifications | Should -HaveCount 0
+    }
+
+    It "Does not remove catlet specification which is deployed" {
+      $config = @"
+name: $specificationName
+"@
+
+      $specification = New-CatletSpecification -Comment 'first version' -ProjectName $project.Name -Config $config
+      $versions = Get-CatletSpecificationVersion -SpecificationId $specification.Id
+      $versions | Should -HaveCount 1
+
+      Deploy-Catlet -SpecificationId $specification.Id -SpecificationVersionId $specification.Latest.Id
+
+      { Remove-CatletSpecification -Id $specification.Id -Force } | Should -Throw '*The catlet specification is deployed as a catlet.*'
+      $specifications = Get-CatletSpecification -ProjectName $project.Name
+      $specifications | Should -HaveCount 1
+      $specifications[0].Id | Should -Be $specification.Id
+    }
   }
 
   AfterEach {
