@@ -42,7 +42,7 @@ Describe "Catlet-Specifications" {
       $latestVersion.Configuration.Content | Should -be $config.ReplaceLineEndings("`n")
       $latestVersion.Variants | Should -HaveCount 1
       $latestVersion.Variants[0].Architecture | Should -Be 'hyperv/amd64'
-      $latestVersion.Variants[0].PinnedGenes | Should -HaveCount 2
+      $latestVersion.Variants[0].PinnedGenes | Should -HaveCount 3
       $latestVersion.Variants[0].PinnedGenes[0].GeneSet | Should -Be 'dbosoft/e2etests-os/base-0.1'
       $latestVersion.Variants[0].PinnedGenes[0].Name | Should -Be 'catlet'
       $latestVersion.Variants[0].PinnedGenes[1].GeneSet | Should -Be 'dbosoft/ubuntu-24.04/20250913'
@@ -70,7 +70,7 @@ fodder:
       $latestVersion.Configuration.Content | Should -be $config.ReplaceLineEndings("`n")
       $latestVersion.Variants | Should -HaveCount 1
       $latestVersion.Variants[0].Architecture | Should -Be 'hyperv/amd64'
-      $latestVersion.Variants[0].PinnedGenes | Should -HaveCount 2
+      $latestVersion.Variants[0].PinnedGenes | Should -HaveCount 3
       $latestVersion.Variants[0].PinnedGenes[0].GeneSet | Should -Be 'dbosoft/e2etests-os/base-0.1'
       $latestVersion.Variants[0].PinnedGenes[0].Name | Should -Be 'catlet'
       $latestVersion.Variants[0].PinnedGenes[1].GeneSet | Should -Be 'dbosoft/ubuntu-24.04/20250913'

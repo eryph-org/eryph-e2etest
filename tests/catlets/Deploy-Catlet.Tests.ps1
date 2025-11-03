@@ -15,6 +15,48 @@ Describe "Catlets" {
   }
   
   Context "Deploy-Catlet" {
+
+    It "Deploys properly configured catlet without parent" {
+      $config = @"
+name: $specificationName
+cpu:
+  count: 3
+memory:
+  startup: 1024
+  minimum: 256
+  maximum: 2048
+drives:
+- name: sda
+  size: 50
+networks:
+- name: default
+  adapter_name: public
+network_adapters:
+- name: public
+"@
+      $specification = New-CatletSpecification -Comment 'first version' -ProjectName $project.Name -Config $config
+
+      Deploy-Catlet -SpecificationId $specification.Id -SpecificationVersionId $specification.Latest.Id
+
+      $vm = Get-VM -Name $specificationName
+
+      $vm.ProcessorCount | Should -BeExactly 3
+
+      $vm.DynamicMemoryEnabled | Should -BeTrue
+      $vm.MemoryStartup | Should -BeExactly 1024MB
+      $vm.MemoryMinimum | Should -BeExactly 256MB
+      $vm.MemoryMaximum | Should -BeExactly 2048MB
+
+      $vm.HardDrives | Should -HaveCount 1
+      $vm.HardDrives[0].Path | Should -BeLike "*\p_$($project.Name)\*\sda.vhdx"
+      $vhd = Get-VHD -Path $vm.HardDrives[0].Path
+      $vhd.Size | Should -BeExactly 50GB
+
+      $vm.NetworkAdapters | Should -HaveCount 1
+      $vm.NetworkAdapters[0].Name | Should -BeExactly 'public'
+      $vm.NetworkAdapters[0].SwitchName | Should -BeExactly 'eryph_overlay'
+    }
+
     It "Deploys catlet with parameterized fodder" {
       $config = @"
 name: $specificationName
