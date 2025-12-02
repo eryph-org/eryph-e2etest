@@ -153,6 +153,10 @@ function New-CatletName {
   "clt$(Get-Date -Format 'yyMMddHHmmss')"
 }
 
+function New-CatletSpecificationName {
+  "spc$(Get-Date -Format 'yyMMddHHmmss')"
+}
+
 function Setup-Gene {
   param(
     [Parameter(Mandatory = $true)]
